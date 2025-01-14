@@ -5,6 +5,7 @@ use Bendersay\Entityadmin\Install\Dependence;
 use Bendersay\Entityadmin\Install\ManagerEvent;
 use Bitrix\Main\Application;
 use Bitrix\Main\ArgumentException;
+use Bitrix\Main\Config\Option;
 use Bitrix\Main\DB\SqlQueryException;
 use Bitrix\Main\IO\File;
 use Bitrix\Main\IO\FileNotFoundException;
@@ -153,6 +154,8 @@ class bendersay_entityadmin extends CModule
     {
         $event = new ManagerEvent();
         $event->unRegisterEvents();
+
+        Option::delete($this->MODULE_ID);
 
         return true;
     }

@@ -1,6 +1,12 @@
 # bendersay: Администрирование сущностей d7
 Модуль предназначен для работы с сущностями d7 в административной части сайта
 
+## Требования
+
+**PHP:** смотреть в [composer.json](composer.json)
+
+**1С-Битрикс модули и их версии:** [dependence.json](install/dependence.json)
+
 ## Самая простая установка 
 
 Скачать архив и распаковать архив в `/local`
@@ -27,7 +33,11 @@
 ```
 *в installer-paths нужно указать путь установки модуля относительно файла composer.json*
 
-После этого выполнить комманду `composer require bendersay/bendersay.entityadmin`
+После этого выполнить команду `composer require bendersay/bendersay.entityadmin`
+
+Установить модуль из админки 1С-Битрикс: Marketplace -> Установленные решения
+
+<img src="./docs/images/settings/module-install.png" alt="аннотация меню" width="500"/>
 
 Добавить в `.gitignore` проекта папку `/local/modules/bendersay.entityadmin` и файлы `/admin/bendersay_entityadmin_entity_element_edit.php`,
 `/admin/bendersay_entityadmin_entity_element_list.php`, `/admin/bendersay_entityadmin_reference_element_list.php` в папке `bitrix`.
