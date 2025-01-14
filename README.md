@@ -1,11 +1,10 @@
 # bendersay: Администрирование сущностей d7
 Модуль предназначен для работы с сущностями d7 в административной части сайта
 
-## Требования
-
-**PHP:** смотреть в [composer.json](composer.json)
-
-**1С-Битрикс модули и их версии:** [dependence.json](install/dependence.json)
+[![Packagist](https://img.shields.io/badge/package-bendersay/bendersay.entityadmin-blue.svg?style=flat-square)](https://packagist.org/packages/bendersay/bendersay.entityadmin)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
+[![For PHP >=8.3](https://img.shields.io/badge/PHP-%3E%3D_8.3-orange.svg?style=flat-square)](https://www.php.net/)
+[![For Bitrix >=23.900.0](https://img.shields.io/badge/bitrix-%3E%3D_23.900.0-orange.svg?style=flat-square)](https://dev.1c-bitrix.ru/docs/versions.php)
 
 ## Самая простая установка 
 
