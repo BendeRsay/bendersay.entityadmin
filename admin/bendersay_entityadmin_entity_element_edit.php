@@ -36,7 +36,7 @@ try {
     $APPLICATION->SetTitle(
         Loc::getMessage(
             'BENDERSAY_ENTITYADMIN_ELEMENT_TAB_TITLE',
-            ['%title%' => EntityHelper::getTableTitle($entityEditManager->getEntityClass())]
+            ['%title%' => EntityHelper::getEntityTitle($entityEditManager->getEntityClass())]
         )
     );
 

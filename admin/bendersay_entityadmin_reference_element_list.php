@@ -18,7 +18,7 @@ try {
     $APPLICATION->SetTitle(
         Loc::getMessage(
             'BENDERSAY_ENTITYADMIN_REFERENCE_ELEMENT_LIST_TITLE',
-            ['%title%' => EntityHelper::getTableTitle($entityListManager->getEntityClass())]
+            ['%title%' => EntityHelper::getEntityTitle($entityListManager->getEntityClass())]
         )
     );
 
@@ -36,7 +36,8 @@ try {
                     'GRID_ID' => $entityListManager->getGridId(),
                     'FILTER' => $entityListManager->getUiFilter(),
                     'ENABLE_LABEL' => true,
-                    'DISABLE_SEARCH' => true,
+                    'ENABLE_LIVE_SEARCH' => true,
+                    'DISABLE_SEARCH' => false,
                 ]
             ); ?>
         </div>

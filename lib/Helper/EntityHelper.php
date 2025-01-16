@@ -2,10 +2,7 @@
 
 namespace Bendersay\Entityadmin\Helper;
 
-use Bitrix\Main\Annotations\AnnotationReader;
 use Bitrix\Main\ORM\Data\DataManager;
-use ReflectionClass;
-use ReflectionException;
 
 /**
  * Хелпер для работы с сущностями
@@ -72,25 +69,15 @@ class EntityHelper
     }
 
     /**
-     * Получение заголовка таблицы из аннотации.
-     * Пример: @Table(title=CRM Продукт)
+     * Получение названия сущности
      *
      * @param string|DataManager $entity
      *
      * @return string
      *
-     * @throws ReflectionException
      */
-    public static function getTableTitle(DataManager|string $entity): string
+    public static function getEntityTitle(DataManager|string $entity): string
     {
-        $reflectionClass = new ReflectionClass($entity);
-        $annotationReader = new AnnotationReader();
-
-        $method = $reflectionClass->getMethod('getTableName');
-        $annotations = $annotationReader->getMethodAnnotations($method);
-
-        return array_key_exists('Table', $annotations) && !empty($annotations['Table']['title'])
-            ? $annotations['Table']['title']
-            : $entity::getTableName();
+        return $entity::getTitle() ?? $entity::getTableName();
     }
 }

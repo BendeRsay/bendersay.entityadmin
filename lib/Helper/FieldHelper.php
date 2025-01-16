@@ -98,51 +98,6 @@ class FieldHelper
         return array_merge($column, $columnNew);
     }
 
-    public static function preparedColumnArray(array $field, array $column): array
-    {
-        $editable = !($field['primary'] || $field['autocomplete'] || isset($field['expression']));
-
-        $columnNew = [
-            'type' => Type::TEXT,
-            'editable' => false,
-        ];
-
-        if ($editable) {
-            $columnNew = match ($field['data_type']) {
-                self::TYPE_INTEGER => [
-                    'type' => Type::INT,
-                    'editable' => ['TYPE' => Types::NUMBER],
-                ],
-                self::TYPE_FLOAT => [
-                    'type' => Type::FLOAT,
-                    'editable' => ['TYPE' => Types::NUMBER],
-                ],
-                self::TYPE_STRING => [
-                    'type' => Type::TEXT,
-                    'editable' => ['TYPE' => Types::TEXT],
-                ],
-                self::TYPE_TEXT => [
-                    'type' => Type::TEXT,
-                    'editable' => ['TYPE' => Types::TEXTAREA],
-                ],
-                self::TYPE_DATE, self::TYPE_DATETIME => [
-                    'type' => Type::DATE,
-                    'editable' => ['TYPE' => Types::DATE],
-                ],
-                self::TYPE_BOOLEAN => [
-                    'type' => Type::CHECKBOX,
-                    'editable' => ['TYPE' => Types::CHECKBOX],
-                ],
-                self::TYPE_ENUM => [
-                    'editable' => false,
-                ],
-                default => $columnNew,
-            };
-        }
-
-        return array_merge($column, $columnNew);
-    }
-
     /**
      * Получаем тип фильтра для поля
      *
@@ -159,26 +114,6 @@ class FieldHelper
             DateField::class, DatetimeField::class => FieldAdapter::DATE,
             BooleanField::class => FieldAdapter::CHECKBOX,
             EnumField::class => FieldAdapter::LIST,
-            default => false,
-        };
-    }
-
-    /**
-     * Получаем тип фильтра для поля
-     *
-     * @param array $field
-     *
-     * @return false|string
-     */
-    public static function getUiFilterTypeByArray(array $field): false|string
-    {
-        return match ($field['data_type']) {
-            self::TYPE_INTEGER, self::TYPE_FLOAT => FieldAdapter::NUMBER,
-            self::TYPE_STRING => FieldAdapter::STRING,
-            self::TYPE_TEXT => FieldAdapter::TEXTAREA,
-            self::TYPE_DATE, self::TYPE_DATETIME => FieldAdapter::DATE,
-            self::TYPE_BOOLEAN => FieldAdapter::CHECKBOX,
-            self::TYPE_ENUM => FieldAdapter::LIST,
             default => false,
         };
     }

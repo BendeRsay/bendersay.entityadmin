@@ -24,19 +24,28 @@ class EntityReferenceManager extends EntityListManager
     public function getJsSelectElement(): string
     {
         $fieldId = $this->request->get('field_id');
+        $fieldIdValue = $this->request->get('field_id_span');
         if (empty($fieldId)) {
             throw new ArgumentException('field_id is empty');
         }
 
         return "
             <script>
-                function SelectElement(id) {
+                function SelectElement(id, value) {
                     let el;
+                    let span;
                     el = window.opener.document.getElementById('" . $fieldId . "');
+                    span = window.opener.document.getElementById('" . $fieldIdValue . "');
                     if (el) {
                         el.value = id;
                         if (window.opener.BX) {
                             window.opener.BX.fireEvent(el, 'change');
+                        }
+                    }
+                    if (span) {
+                        span.textContent = value;
+                        if (window.opener.BX) {
+                            window.opener.BX.fireEvent(span, 'change');
                         }
                     }
                     window.close();
@@ -57,13 +66,24 @@ class EntityReferenceManager extends EntityListManager
      */
     protected function getActionList(array $elem): array
     {
-        $primaryKey = $this->entityClass::getEntity()->getPrimary();
+        $entity = $this->entityClass::getEntity();
+        $primaryKey = $entity->getPrimary();
+        $refKey = '';
+        $dataClass = $entity->getDataClass();
+        $reflectionClass = new \ReflectionClass($dataClass);
+
+        if ($reflectionClass->implementsInterface(DataManagerInterface::class)) {
+            /** @var $dataClass DataManagerInterface */
+            $refKey = $dataClass::getEntityReferenceShowField();
+        }
+
+        $value = $elem[$refKey] ?? '';
 
         return [
             [
                 'text' => Loc::getMessage('BENDERSAY_ENTITYADMIN_CHOOSE_ELEMENT_ACTION_TEXT'),
                 'default' => true,
-                'onclick' => 'SelectElement(\'' . $elem[$primaryKey] . '\')',
+                'onclick' => 'SelectElement(\'' . $elem[$primaryKey] . '\', \'' . $value . '\')',
             ],
         ];
     }

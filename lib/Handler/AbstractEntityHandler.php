@@ -101,8 +101,11 @@ class AbstractEntityHandler
             }
             $field = $scalarFieldList[$fieldCode];
 
-            if ($field->isAutocomplete() === true || ($field->isNullable() && empty($fieldValue))) {
+            if ($field->isAutocomplete() === true) {
                 unset($elementField[$fieldCode]);
+            }
+            if ($field->isNullable() && empty($fieldValue)) {
+                $elementField[$fieldCode] = null;
             }
 
             $defaultValue = $field->getDefaultValue();

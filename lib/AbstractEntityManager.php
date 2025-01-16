@@ -4,6 +4,7 @@ namespace Bendersay\Entityadmin;
 
 use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Install\Config;
+use Bendersay\Entityadmin\Readonly\FieldReference;
 use Bitrix\Main\Application;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\Context;
@@ -13,6 +14,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\LoaderException;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Fields\Field;
 use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\SystemException;
 
@@ -24,7 +26,7 @@ abstract class AbstractEntityManager
     /** @var DataManager|string Класс сущности с которой работаем */
     protected DataManager|string $entityClass;
 
-    /** @var array Поля сущности */
+    /** @var Field[] Поля сущности */
     protected array $fieldList;
 
     /** @var array Поля связей с другими сущностями */
@@ -67,9 +69,10 @@ abstract class AbstractEntityManager
         }
 
         $this->entityClass = $entityClass;
-        $this->primaryCode = $this->entityClass::getEntity()->getPrimary();
-        $this->fieldList = $this->entityClass::getMap();
-        $this->tableTitle = EntityHelper::getTableTitle($this->entityClass);
+        $entity = $this->entityClass::getEntity();
+        $this->primaryCode = $entity->getPrimary();
+        $this->fieldList = $entity->getFields();
+        $this->tableTitle = EntityHelper::getEntityTitle($this->entityClass);
         $this->fieldReferenceList = $this->getFieldReferenceList();
         $this->localSession = Application::getInstance()->getLocalSession(static::class);
     }
@@ -107,10 +110,10 @@ abstract class AbstractEntityManager
     /**
      * Возвращаем список полей связей с другими сущностями
      *
-     * @return array
+     * @return FieldReference[]
      *
      * @throws SystemException
-     * @throws ArgumentException
+     * @throws ArgumentException|\ReflectionException
      */
     public function getFieldReferenceList(): array
     {
@@ -119,12 +122,56 @@ abstract class AbstractEntityManager
         foreach ($this->fieldList as $field) {
             if ($field instanceof Reference) {
                 $fieldName = $field->getName();
+                $link = $field->getElementals();
+                if ($link === false) {
+                    continue;
+                }
                 $foreignKey = array_key_first($field->getElementals());
-                $result[$foreignKey] = [
-                    'NAME' => $fieldName,
-                    'FOREIGN_KEY' => $foreignKey,
-                    'ENTITY' => $field->getRefEntity()->getDataClass(),
-                ];
+
+                $result[$foreignKey] = new FieldReference(
+                    $field->getRefEntity()->getDataClass(),
+                    $fieldName,
+                    $foreignKey,
+                    $this->getItemList($field),
+                );
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Возвращаем список значений связанной сущности
+     *
+     * @param Reference $field
+     *
+     * @return array
+     *
+     * @throws SystemException
+     * @throws ArgumentException|\ReflectionException
+     */
+    protected function getItemList(Reference $field): array
+    {
+        $result = [];
+        $entityRef = $field->getRefEntity();
+        $dataClassRef = $entityRef->getDataClass();
+        $reflectionClass = new \ReflectionClass($dataClassRef);
+
+        if ($reflectionClass->implementsInterface(DataManagerInterface::class)) {
+            /** @var $dataClassRef DataManagerInterface */
+            $keyName = $dataClassRef::getEntityReferenceShowField();
+            $keyPrimary = $entityRef->getPrimary();
+
+            $list = $dataClassRef::getList([
+                'select' => [
+                    $entityRef->getPrimary(),
+                    $keyName,
+                ],
+                'cache' => ['ttl' => 3600],
+            ])->fetchAll();
+
+            foreach ($list as $item) {
+                $result[$item[$keyPrimary]] = $item[$keyName];
             }
         }
 

@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * Используется в options.php
+ */
+
 $entities = unserialize(\Bitrix\Main\Config\Option::get($mid, $option['CODE']));
 ?>
 
@@ -9,19 +13,21 @@ $entities = unserialize(\Bitrix\Main\Config\Option::get($mid, $option['CODE']));
     $i = 0;
 
 foreach ($entities as $entity):?>
-        <?php $i++; ?>
+        <?php
+    $i++; ?>
         <tr>
             <td>
                 <input
-                    type="text"
-                    name="<?= $option['CODE']; ?>[]"
-                    id="<?= $option['CODE']; ?>_elem_<?= $i; ?>"
-                    value="<?= $entity; ?>"
-                    size="<?= $option['SETTINGS'][1]; ?>"
+                        type="text"
+                        name="<?= $option['CODE']; ?>[]"
+                        id="<?= $option['CODE']; ?>_elem_<?= $i; ?>"
+                        value="<?= $entity; ?>"
+                        size="<?= $option['SETTINGS'][1]; ?>"
                 >
             </td>
         </tr>
-    <?php endforeach; ?>
+    <?php
+endforeach; ?>
     <?php
 if ($entities) {
     ++$i;
@@ -30,10 +36,10 @@ if ($entities) {
     <tr>
         <td>
             <input
-                type="text"
-                name="<?= $option['CODE']; ?>[]"
-                id="<?= $option['CODE']; ?>_elem_<?= $i; ?>"
-                size="<?= $option['SETTINGS'][1]; ?>"
+                    type="text"
+                    name="<?= $option['CODE']; ?>[]"
+                    id="<?= $option['CODE']; ?>_elem_<?= $i; ?>"
+                    size="<?= $option['SETTINGS'][1]; ?>"
             >
         </td>
     </tr>
@@ -44,8 +50,8 @@ if ($entities) {
     let inputName = '<?= $option['CODE']; ?>' + '[]';
     let idPrefix = '<?= $option['CODE']; ?>' + '_elem_';
     let size = <?= $option['SETTINGS'][1]; ?>;
-    function AddTableRow()
-    {
+
+    function AddTableRow() {
         let oTable = BX('<?= $option['CODE'];?>_table');
         numRows = oTable.rows.length;
         let oRow = oTable.insertRow(-1);

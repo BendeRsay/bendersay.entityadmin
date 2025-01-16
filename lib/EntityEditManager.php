@@ -183,9 +183,9 @@ class EntityEditManager extends AbstractEntityManager
 
             // делаем редактируемыми primary поля без autoincrement
             if ((
-                    ($primary && $identity !== null)
+                ($primary && $identity !== null)
                     || $autocomplete || $expressionField
-                ) && $this->actionAdd) {
+            ) && $this->actionAdd) {
                 continue;
             }
 
@@ -224,13 +224,15 @@ class EntityEditManager extends AbstractEntityManager
                 case 'reference':
                     $widget = new OrmElementWidget(
                         [
-                            'ENTITY' => $this->fieldReferenceList[$code]['ENTITY'],
+                            'ENTITY' => $this->fieldReferenceList[$code]->entity,
                             'INPUT_SIZE' => 5,
                             'WINDOW_WIDTH' => 1000,
                             'WINDOW_HEIGHT' => 800,
                             'TITLE_FIELD_NAME' => $code,
                             'TEMPLATE' => 'select',
                             'ADDITIONAL_URL_PARAMS' => [],
+                            'REFERENCE_VALUE' => $this->fieldReferenceList[$field->getName(
+                            )]->itemList[$this->elementData[$code]],
                         ]
                     );
 

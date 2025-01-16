@@ -10,7 +10,7 @@ use Bitrix\Main\Config\Option;
 use Bitrix\Main\Context;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
-use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Entity;
 
 global $USER;
 
@@ -84,13 +84,7 @@ if (($request = Context::getCurrent()->getRequest())->isPost() && strlen($Update
                                     continue;
                                 }
 
-                                /** @var DataManager $entityClass */
-                                //                                if ($entityClass::getEntity()->getPrimary() !== 'ID') {
-                                //                                    //todo сделать поддержку работы с другими ключами
-                                //                                    $moduleErrors[] = "Ошибка добавления сущности $entityClass.
-                                //                                    В настоящий момент поддерживаются только сущности с первичным ключом ID.";
-                                //                                    unset($list[$key]);
-                                //                                }
+                                $list[$key] = Entity::normalizeEntityClass($entityClass);
                             }
                         }
 

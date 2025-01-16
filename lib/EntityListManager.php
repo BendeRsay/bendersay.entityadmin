@@ -14,15 +14,10 @@ use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Fields\ArrayField;
 use Bitrix\Main\ORM\Fields\BooleanField;
 use Bitrix\Main\ORM\Fields\DatetimeField;
-use Bitrix\Main\ORM\Fields\ExpressionField;
 use Bitrix\Main\ORM\Fields\Field;
-use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
-use Bitrix\Main\ORM\Fields\Relations\OneToMany;
-use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\ORM\Fields\ScalarField;
 use Bitrix\Main\ORM\Query\Result as QueryResult;
 use Bitrix\Main\SystemException;
-use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\UI\PageNavigation;
 
 /**
@@ -42,6 +37,9 @@ class EntityListManager extends AbstractEntityManager
     protected PageNavigation $pageNavigation;
 
     protected QueryResult $queryResult;
+
+    /** @var null|string поле для поиска в списке */
+    protected ?string $searchField = null;
 
     /**
      * @throws LoaderException
@@ -64,6 +62,11 @@ class EntityListManager extends AbstractEntityManager
                 ])['nPageSize']
             )
             ->initFromUri();
+
+        $reflectionClass = new \ReflectionClass($this->entityClass);
+        if ($reflectionClass->implementsInterface(DataManagerInterface::class)) {
+            $this->searchField = $this->entityClass::getEntityReferenceShowField();
+        }
     }
 
     /**
@@ -99,16 +102,18 @@ class EntityListManager extends AbstractEntityManager
     {
         $columnList = [];
 
-        foreach ($this->fieldList as $key => $field) {
-            if ($field instanceof Field) {
-                $column = [
-                    'id' => $field->getName(),
-                    'name' => !empty($field->getTitle()) ? $field->getTitle() : $field->getName(),
-                    'sort' => $field->getName(),
-                    'title' => $field->getName(),
-                    'default' => true,
-                ];
+        foreach ($this->fieldList as $field) {
+            if (!($field instanceof Field)) {
+                throw new NotSupportedException('field not supported');
             }
+
+            $column = [
+                'id' => $field->getName(),
+                'name' => !empty($field->getTitle()) ? $field->getTitle() : $field->getName(),
+                'sort' => $field->getName(),
+                'title' => $field->getName(),
+                'default' => true,
+            ];
 
             if ($field instanceof ArrayField) {
                 $reflection = new \ReflectionClass($field);
@@ -118,19 +123,6 @@ class EntityListManager extends AbstractEntityManager
                 $columnList[] = $column;
             } elseif ($field instanceof ScalarField) {
                 $columnList[] = FieldHelper::preparedColumn($field, $column);
-            } elseif ($field instanceof Reference || $field instanceof OneToMany || $field instanceof ManyToMany || $field instanceof ExpressionField) {
-                continue;
-            } elseif (is_array($field)) {
-                $column = [
-                    'id' => $key,
-                    'name' => $field['title'] ?? $key,
-                    'sort' => $key,
-                    'title' => $key,
-                    'default' => true,
-                ];
-                $columnList[] = FieldHelper::preparedColumnArray($field, $column);
-            } else {
-                throw new NotSupportedException('field not supported');
             }
         }
 
@@ -139,7 +131,6 @@ class EntityListManager extends AbstractEntityManager
 
     /**
      * Возвращаем строки для грида
-     * TODO разбить на методы
      *
      * @throws ObjectPropertyException
      * @throws SystemException
@@ -153,13 +144,19 @@ class EntityListManager extends AbstractEntityManager
         foreach ($elementList as $elemKey => $elem) {
             $rowList[$elemKey]['actions'] = $this->getActionList($elem);
 
-            foreach ($this->fieldList as $fieldKey => $field) {
+            foreach ($this->fieldList as $field) {
+                if (!($field instanceof Field)) {
+                    throw new NotSupportedException('field not supported');
+                }
+
+                $filedValue = $elem[$field->getName()];
+
                 if ($field instanceof ArrayField) {
                     try {
-                        if (empty($elem[$field->getName()])) {
+                        if (empty($filedValue)) {
                             $fieldDataJson = null;
                         } else {
-                            $fieldDataJson = $field->encode($elem[$field->getName()]);
+                            $fieldDataJson = $field->encode($filedValue);
                         }
                     } catch (\JsonException|ArgumentException $ex) {
                         $fieldDataJson = null;
@@ -167,33 +164,7 @@ class EntityListManager extends AbstractEntityManager
 
                     $rowList[$elemKey]['data'][$field->getName()] = $fieldDataJson;
                 } elseif ($field instanceof ScalarField) {
-                    if ($field->isPrimary()) {
-                        $rowList[$elemKey]['id'] = $elem[$field->getName()];
-                    }
-                    $rowList[$elemKey]['data'][$field->getName()] = $elem[$field->getName()];
-
-                    if ($field instanceof BooleanField) {
-                        $rowList[$elemKey]['data'][$field->getName()] = $field->booleanizeValue(
-                            $elem[$field->getName()]
-                        ) ? 'Y' : 'N';
-                    }
-                    if ($field instanceof DatetimeField && !empty($elem[$field->getName()])) {
-                        $rowList[$elemKey]['data'][$field->getName()] = $elem[$field->getName()]->toString();
-                    }
-                } elseif ($field instanceof Reference || $field instanceof OneToMany || $field instanceof ManyToMany || $field instanceof ExpressionField) {
-                    continue;
-                } elseif (is_array($field)) {
-                    $value = $elem[$fieldKey];
-                    if ($field['primary']) {
-                        $rowList[$elemKey]['id'] = $value;
-                    }
-                    $rowList[$elemKey]['data'][$fieldKey] = $value;
-
-                    if ($value instanceof DateTime) {
-                        $rowList[$elemKey]['data'][$fieldKey] = $value->toString();
-                    }
-                } else {
-                    throw new NotSupportedException('field not supported');
+                    $this->preparedRowFieldScalar($rowList, $field, $elemKey, $filedValue);
                 }
             }
         }
@@ -282,29 +253,27 @@ class EntityListManager extends AbstractEntityManager
         $keyFirst = array_key_first($this->fieldList);
 
         foreach ($this->fieldList as $key => $field) {
+            if (!($field instanceof Field)) {
+                throw new NotSupportedException('field not supported');
+            }
+
             if ($field instanceof ScalarField) {
+                if ($this->searchField !== null && $field->getName() === $this->searchField) {
+                    continue;
+                }
+
                 $uiFilterTmp = [
                     'id' => $field->getName(),
                     'name' => !empty($field->getTitle()) ? $field->getTitle() : $field->getName(),
                     'type' => FieldHelper::getUiFilterTypeByObject($field),
                     'default' => $key === $keyFirst,
                 ];
+
                 // для BooleanField делаем фильтр цифровым
                 if ($field instanceof BooleanField) {
                     $uiFilterTmp['valueType'] = 'numeric';
                 }
                 $uiFilter[] = $uiFilterTmp;
-            } elseif ($field instanceof Reference || $field instanceof OneToMany || $field instanceof ManyToMany || $field instanceof ExpressionField) {
-                continue;
-            } elseif (is_array($field)) {
-                $uiFilter[] = [
-                    'id' => $key,
-                    'name' => $field['title'] ?? $key,
-                    'type' => FieldHelper::getUiFilterTypeByArray($field),
-                    'default' => $key === $keyFirst,
-                ];
-            } else {
-                throw new NotSupportedException('field not supported');
             }
         }
 
@@ -335,11 +304,8 @@ class EntityListManager extends AbstractEntityManager
     }
 
     /**
-     * Получаем фильтр для выборки
-     *
-     * TODO: хоть поиск и отключен в параметрах компонента 'DISABLE_SEARCH' => true,
-     * но есть возможность написать текст в input и он приходит. Додумать обработку.
-     * $searchString = $filterOption->getSearchString();
+     * Получаем фильтр для выборки.
+     * С поиском работаем, если не пустой и в сущности реализован DataManagerInterface.
      *
      * @return array
      *
@@ -348,8 +314,18 @@ class EntityListManager extends AbstractEntityManager
     protected function getFilter(): array
     {
         $filterOption = new \Bitrix\Main\UI\Filter\Options($this->getFilterGridId());
+        $filterLogic = $filterOption->getFilterLogic($this->getUiFilter());
 
-        return $filterOption->getFilterLogic($this->getUiFilter());
+        $searchString = trim($filterOption->getSearchString());
+        if (empty($searchString) || $this->searchField === null) {
+            return $filterLogic;
+        }
+
+        unset($filterLogic[$this->searchField]);
+
+        return array_merge($filterLogic, [
+            '%' . $this->searchField => $searchString,
+        ]);
     }
 
     /**
@@ -396,6 +372,44 @@ class EntityListManager extends AbstractEntityManager
                     . '"}',
             ],
         ];
+    }
+
+    /**
+     * Подготавливаем поле ScalarField для отображения
+     *
+     * @param $rowList
+     * @param ScalarField $field
+     * @param $elemKey
+     * @param $value
+     *
+     * @return void
+     */
+    protected function preparedRowFieldScalar(&$rowList, ScalarField $field, $elemKey, $value): void
+    {
+        if ($field->isPrimary()) {
+            $rowList[$elemKey]['id'] = $value;
+        }
+        $rowList[$elemKey]['data'][$field->getName()] = $value;
+
+        $valueRef = $this->fieldReferenceList[$field->getName()]->itemList[$value];
+        if (!empty($valueRef)) {
+            $url = EntityHelper::getEditUrl([
+                'entity' => $this->fieldReferenceList[$field->getName()]->entity,
+                'id' => $value,
+            ]);
+            $rowList[$elemKey]['columns'][$field->getName()]
+                = '[<a href="' . $url . '" target="_blank">' . $value . '</a>] ' . $valueRef;
+        }
+
+        if ($field instanceof BooleanField) {
+            $rowList[$elemKey]['data'][$field->getName()] = $field->booleanizeValue(
+                $value
+            ) ? 'Y' : 'N';
+        }
+
+        if ($field instanceof DatetimeField && !empty($value)) {
+            $rowList[$elemKey]['data'][$field->getName()] = $value->toString();
+        }
     }
 
 }

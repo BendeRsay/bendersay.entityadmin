@@ -20,9 +20,8 @@ foreach ($entityClassList as $entityClass) {
     if (EntityHelper::checkEntityExistence($entityClass)) {
         /** @var DataManager $entityClass */
         $fields = $entityClass::getMap();
-
         $entityList[] = [
-            'title' => EntityHelper::getTableTitle($entityClass),
+            'title' => EntityHelper::getEntityTitle($entityClass),
             'name' => $entityClass,
         ];
     } else {

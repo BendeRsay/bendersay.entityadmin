@@ -130,22 +130,22 @@ class OrmElementWidget extends NumberWidget
             );
             <?php
             if (!empty($entityListData)) {
-                foreach ($entityListData as $referenceData) {
-                    $elementId = $referenceData['ID'];
-                    $elementName = $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
-                        ? $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
-                        : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
+            foreach ($entityListData as $referenceData) {
+            $elementId = $referenceData['ID'];
+            $elementName = $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
+                ? $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
+                : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
 
-                    ?>
+            ?>
             multiple.addField({
                 value: '<?= $elementId ?>',
                 field_id: <?= $elementId ?>,
                 element_title: '<?= static::prepareToJs($elementName) ?>'
             });
             <?php
-                }
             }
-        ?>
+            }
+            ?>
             multiple.addField();
         </script>
         <?php
@@ -267,7 +267,7 @@ class OrmElementWidget extends NumberWidget
         /**
          * @var AdminBaseHelper $linkedHelper
          */
-        $entity = $this->getSettings('ENTITY');
+        $entityClass = $this->getSettings('ENTITY');
         $inputSize = (int)$this->getSettings('INPUT_SIZE');
         $windowWidth = (int)$this->getSettings('WINDOW_WIDTH');
         $windowHeight = (int)$this->getSettings('WINDOW_HEIGHT');
@@ -278,20 +278,20 @@ class OrmElementWidget extends NumberWidget
         $entityData = $this->getOrmElementData();
 
         if (!empty($entityData)) {
-            $elementId = $entityData['ID'];
-            $elementName = $entityData[$this->getSettings('TITLE_FIELD_NAME')]
-                ? $entityData[$this->getSettings('TITLE_FIELD_NAME')]
-                : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
+            $entity = $entityClass::getEntity();
+            $keyPrimary = $entity->getPrimary();
+            $inputValue = $entityData[$keyPrimary];
         } else {
-            $elementId = '';
+            $inputValue = '';
         }
 
         $popupUrl = EntityHelper::getReferenceElementListUrl(
             array_merge(
                 [
-                    'entity' => $entity,
-                    'table' => $entity::getTableName(),
+                    'entity' => $entityClass,
+                    'table' => $entityClass::getTableName(),
                     'field_id' => $name . '[' . $key . ']',
+                    'field_id_span' => 'value_' . $name . '[' . $key . ']',
                 ],
                 $this->getSettings('ADDITIONAL_URL_PARAMS')
             )
@@ -299,13 +299,14 @@ class OrmElementWidget extends NumberWidget
 
         return '<input name="' . $this->getEditInputName() . '"
                      id="' . $name . '[' . $key . ']"
-                     value="' . $elementId . '"
+                     value="' . $inputValue . '"
                      size="' . $inputSize . '"
                      type="text">'
             . '<input type="button"
                     value="..." onClick="jsUtils.OpenWindow(\'' . $popupUrl . '\', ' . $windowWidth . ', '
-            . $windowHeight . ');">' . '&nbsp;<span id="sp_' . md5($name) . '_' . $key . '" >'
-            . static::prepareToOutput($elementName)
+            . $windowHeight . ');">'
+            . '&nbsp;<span id="value_' . $name . '[' . $key . ']">'
+            . $this->getSettings('REFERENCE_VALUE')
             . '</span>';
     }
 
@@ -360,15 +361,15 @@ class OrmElementWidget extends NumberWidget
                 }
             }
 
-            foreach ($valueList as $entityId) {
-                if ($this->getSettings('MULTIPLE')) {
-                    $refInfo[] = ['ID' => $entityId];
-                } else {
-                    $refInfo = ['ID' => $entityId];
-
-                    break;
-                }
-            }
+            //            foreach ($valueList as $entityId) {
+            //                if ($this->getSettings('MULTIPLE')) {
+            //                    $refInfo[] = ['ID' => $entityId];
+            //                } else {
+            //                    $refInfo = ['ID' => $entityId];
+            //
+            //                    break;
+            //                }
+            //            }
         }
 
         return $refInfo;
