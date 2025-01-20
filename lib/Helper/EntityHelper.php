@@ -38,6 +38,8 @@ class EntityHelper
      */
     public static function getListUrl(array $queryParams = []): string
     {
+        $queryParams = array_merge($queryParams, ['sessid' => bitrix_sessid()]);
+
         return '/bitrix/admin/bendersay_entityadmin_entity_element_list.php?lang=' . LANGUAGE_ID
             . '&' . http_build_query($queryParams);
     }
@@ -51,6 +53,8 @@ class EntityHelper
      */
     public static function getEditUrl(array $queryParams = []): string
     {
+        $queryParams = array_merge($queryParams, ['sessid' => bitrix_sessid()]);
+
         return '/bitrix/admin/bendersay_entityadmin_entity_element_edit.php?lang=' . LANGUAGE_ID
             . '&' . http_build_query($queryParams);
     }
@@ -64,6 +68,8 @@ class EntityHelper
      */
     public static function getReferenceElementListUrl(array $queryParams = []): string
     {
+        $queryParams = array_merge($queryParams, ['sessid' => bitrix_sessid()]);
+
         return '/bitrix/admin/bendersay_entityadmin_reference_element_list.php?lang=' . LANGUAGE_ID
             . '&' . http_build_query($queryParams);
     }

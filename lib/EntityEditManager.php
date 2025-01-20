@@ -96,24 +96,27 @@ class EntityEditManager extends AbstractEntityManager
      */
     public function getMenu(): array
     {
-        return [
-            [
-                'TEXT' => $this->tableTitle,
-                'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_RETURN_TO_LIST_BUTTON_TITLE'),
-                'LINK' => EntityHelper::getListUrl([
-                    'entity' => $this->entityClass,
-                ]),
-                'ICON' => 'btn_list',
-            ],
-            [
+        $result[] = [
+            'TEXT' => $this->tableTitle,
+            'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_RETURN_TO_LIST_BUTTON_TITLE'),
+            'LINK' => EntityHelper::getListUrl([
+                'entity' => $this->entityClass,
+            ]),
+            'ICON' => 'btn_list',
+        ];
+
+        if ($this->modRight === 'W') {
+            $result[] = [
                 'TEXT' => Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_BUTTON_TEXT'),
                 'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_BUTTON_TITLE'),
                 'LINK' => 'javascript: if (confirm("'
                     . Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_ELEMENT_ACTION_CONFIRM')
                     . '")) {document.getElementById("delete").value = "Y"; document.getElementById("editform").submit()}',
                 'ICON' => 'btn_delete',
-            ],
-        ];
+            ];
+        }
+
+        return $result;
     }
 
     /**
@@ -126,7 +129,7 @@ class EntityEditManager extends AbstractEntityManager
     public function getTabControlButtonList(): array
     {
         return [
-            'disabled' => false,
+            'disabled' => $this->modRight !== 'W',
             'back_url' => EntityHelper::getListUrl([
                 'entity' => $this->entityClass,
             ]),
@@ -246,12 +249,15 @@ class EntityEditManager extends AbstractEntityManager
                     continue 2;
             }
 
+            $showBasicEditField = ($primary && $identity !== null)
+                || $autocomplete || $expressionField || $this->modRight !== 'W';
+
             $widget->setEntityName($this->entityClass);
             $widget->setCode($code);
             $widget->setTitle($title);
             $widget->setData($value);
             $widget->setRequired($required);
-            $widget->showBasicEditField(($primary && $identity !== null) || $autocomplete || $expressionField);
+            $widget->showBasicEditField($showBasicEditField);
         }
     }
 

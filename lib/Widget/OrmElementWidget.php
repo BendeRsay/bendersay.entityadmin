@@ -130,22 +130,22 @@ class OrmElementWidget extends NumberWidget
             );
             <?php
             if (!empty($entityListData)) {
-            foreach ($entityListData as $referenceData) {
-            $elementId = $referenceData['ID'];
-            $elementName = $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
-                ? $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
-                : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
+                foreach ($entityListData as $referenceData) {
+                    $elementId = $referenceData['ID'];
+                    $elementName = $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
+                        ? $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
+                        : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
 
-            ?>
+                    ?>
             multiple.addField({
                 value: '<?= $elementId ?>',
                 field_id: <?= $elementId ?>,
                 element_title: '<?= static::prepareToJs($elementName) ?>'
             });
             <?php
+                }
             }
-            }
-            ?>
+        ?>
             multiple.addField();
         </script>
         <?php

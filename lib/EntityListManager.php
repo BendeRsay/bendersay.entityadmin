@@ -213,6 +213,10 @@ class EntityListManager extends AbstractEntityManager
      */
     public function getActionPanel(): array
     {
+        if ($this->modRight !== 'W') {
+            return [];
+        }
+
         $snippet = new Snippet();
 
         return [
@@ -281,6 +285,41 @@ class EntityListManager extends AbstractEntityManager
     }
 
     /**
+     * Показывать чекбокс для выбора строки?
+     *
+     * @return bool
+     */
+    public function showRowCheckbox(): bool
+    {
+        return !($this->modRight !== 'W');
+    }
+
+    /**
+     * Получаем фильтр для выборки.
+     * С поиском работаем, если не пустой и в сущности реализован DataManagerInterface.
+     *
+     * @return array
+     *
+     * @throws NotSupportedException
+     */
+    public function getFilter(): array
+    {
+        $filterOption = new \Bitrix\Main\UI\Filter\Options($this->getFilterGridId());
+        $filterLogic = $filterOption->getFilterLogic($this->getUiFilter());
+
+        $searchString = trim($filterOption->getSearchString());
+        if (empty($searchString) || $this->searchField === null) {
+            return $filterLogic;
+        }
+
+        unset($filterLogic[$this->searchField]);
+
+        return array_merge($filterLogic, [
+            '%' . $this->searchField => $searchString,
+        ]);
+    }
+
+    /**
      * Выбираем элементы сущности
      *
      * @throws ObjectPropertyException
@@ -304,31 +343,6 @@ class EntityListManager extends AbstractEntityManager
     }
 
     /**
-     * Получаем фильтр для выборки.
-     * С поиском работаем, если не пустой и в сущности реализован DataManagerInterface.
-     *
-     * @return array
-     *
-     * @throws NotSupportedException
-     */
-    protected function getFilter(): array
-    {
-        $filterOption = new \Bitrix\Main\UI\Filter\Options($this->getFilterGridId());
-        $filterLogic = $filterOption->getFilterLogic($this->getUiFilter());
-
-        $searchString = trim($filterOption->getSearchString());
-        if (empty($searchString) || $this->searchField === null) {
-            return $filterLogic;
-        }
-
-        unset($filterLogic[$this->searchField]);
-
-        return array_merge($filterLogic, [
-            '%' . $this->searchField => $searchString,
-        ]);
-    }
-
-    /**
      * Меню для каждого элемента
      *
      * @param array $elem
@@ -340,6 +354,10 @@ class EntityListManager extends AbstractEntityManager
      */
     protected function getActionList(array $elem): array
     {
+        if ($this->modRight !== 'W') {
+            return [];
+        }
+
         $primaryKey = $this->entityClass::getEntity()->getPrimary();
 
         return [
@@ -366,7 +384,6 @@ class EntityListManager extends AbstractEntityManager
                             'entity' => $this->entityClass,
                             'delete' => 'Y',
                             'id' => $elem[$primaryKey],
-                            'sessid' => bitrix_sessid(),
                         ]
                     )
                     . '"}',
@@ -393,12 +410,16 @@ class EntityListManager extends AbstractEntityManager
 
         $valueRef = $this->fieldReferenceList[$field->getName()]->itemList[$value];
         if (!empty($valueRef)) {
-            $url = EntityHelper::getEditUrl([
-                'entity' => $this->fieldReferenceList[$field->getName()]->entity,
-                'id' => $value,
-            ]);
-            $rowList[$elemKey]['columns'][$field->getName()]
-                = '[<a href="' . $url . '" target="_blank">' . $value . '</a>] ' . $valueRef;
+            $rowList[$elemKey]['columns'][$field->getName()] = '[' . $value . '] ' . $valueRef;
+
+            if ($this->modRight === 'W') {
+                $url = EntityHelper::getEditUrl([
+                    'entity' => $this->fieldReferenceList[$field->getName()]->entity,
+                    'id' => $value,
+                ]);
+                $rowList[$elemKey]['columns'][$field->getName()]
+                    = '[<a href="' . $url . '" target="_blank">' . $value . '</a>] ' . $valueRef;
+            }
         }
 
         if ($field instanceof BooleanField) {

@@ -83,6 +83,8 @@ class EntityListHandler extends AbstractEntityHandler
      */
     public function processFinish(): void
     {
+        $this->processFinishCommon();
+
         if (!empty($this->errorList)) {
             if ($this->request->isPost()) {
                 (new Json(['messages' => $this->errorList]))->send();

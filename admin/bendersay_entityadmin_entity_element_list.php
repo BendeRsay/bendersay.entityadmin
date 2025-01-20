@@ -57,19 +57,22 @@ try {
             ); ?>
         </div>
         <?php
-        (new CAdminUiContextMenu([
-            [
-                'TEXT' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT'),
-                'LINK' => EntityHelper::getEditUrl(
-                    [
-                        'entity' => $entityListManager->getEntityClass(),
-                        'add' => 'Y',
-                    ]
-                ),
-                'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT'),
-                'ICON' => 'btn_new',
-            ],
-        ]))->Show(); ?>
+        if ($entityListManager->getModRight() === 'W') {
+            (new CAdminUiContextMenu([
+                [
+                    'TEXT' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT'),
+                    'LINK' => EntityHelper::getEditUrl(
+                        [
+                            'entity' => $entityListManager->getEntityClass(),
+                            'add' => 'Y',
+                        ]
+                    ),
+                    'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT'),
+                    'ICON' => 'btn_new',
+                ],
+            ]))->Show();
+        }
+        ?>
     </div>
 
     <?php
@@ -81,7 +84,7 @@ try {
             'COLUMNS' => $entityListManager->getColumnList(),
             'ROWS' => $entityListManager->getRowList(),
             'TOTAL_ROWS_COUNT' => $entityListManager->getTotalRowsCount(),
-            'SHOW_ROW_CHECKBOXES' => true,
+            'SHOW_ROW_CHECKBOXES' => $entityListManager->showRowCheckbox(),
             'NAV_OBJECT' => $entityListManager->getPageNavigation(),
             'AJAX_MODE' => 'Y',
             'AJAX_ID' => \CAjax::getComponentID('bitrix:main.ui.grid', '.default', ''),

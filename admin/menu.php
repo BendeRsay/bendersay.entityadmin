@@ -7,7 +7,10 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 
-if (!Loader::includeModule(Config::MODULE_CODE)) {
+global $APPLICATION;
+
+if (!Loader::includeModule(Config::MODULE_CODE)
+    || $APPLICATION->GetGroupRight(Config::MODULE_CODE) === 'D') {
     return;
 }
 

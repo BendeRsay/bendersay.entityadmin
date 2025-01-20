@@ -76,6 +76,7 @@ class EntityEditHandler extends AbstractEntityHandler
      */
     public function processFinish(): void
     {
+        $this->processFinishCommon();
         $uri = new Uri($this->request->getRequestUri());
 
         if (!empty($this->errorList)) {

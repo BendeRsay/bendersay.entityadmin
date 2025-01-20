@@ -4,10 +4,13 @@ namespace Bendersay\Entityadmin\Handler;
 
 use Bendersay\Entityadmin\EntityEditManager;
 use Bendersay\Entityadmin\EntityListManager;
+use Bendersay\Entityadmin\Enum\CodeExceptionEnum;
 use Bendersay\Entityadmin\Install\Config;
 use Bitrix\Main\Application;
 use Bitrix\Main\Data\LocalStorage\SessionLocalStorage;
 use Bitrix\Main\HttpRequest;
+use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\ObjectException;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\BooleanField;
@@ -56,15 +59,21 @@ class AbstractEntityHandler
         $this->modRight = \CMain::GetGroupRight(Config::MODULE_CODE);
         $this->localSession = Application::getInstance()->getLocalSession(self::class);
 
-        if ($this->modRight < 'W') {
-            $this->errorList[] = 'access denied';
+        if (!check_bitrix_sessid()) {
+            $this->errorList[CodeExceptionEnum::ACCESS_DENIED->name] = CodeExceptionEnum::getMessage(
+                CodeExceptionEnum::ACCESS_DENIED->name
+            );
         }
     }
 
     /**
      * Проверка POST запроса
+     * Права при POST у модуля должны быть W - запись
+     * При запросе из фильтра и правах !== 'D' пропускаем
      *
      * @return bool
+     *
+     * @throws NotSupportedException
      */
     protected function checkPost(): bool
     {
@@ -72,8 +81,21 @@ class AbstractEntityHandler
             return false;
         }
 
-        if (!check_bitrix_sessid()) {
-            $this->errorList[] = 'access denied';
+        if ($this->modRight < 'W') {
+            if ($this->request->isAjaxRequest()) {
+                $applyFilter = $this->request->get('apply_filter');
+                if ($applyFilter === 'Y' && $this->modRight !== 'D') {
+                    return true;
+                }
+                $this->errorList[] = [
+                    'TEXT' => CodeExceptionEnum::getMessage(
+                        CodeExceptionEnum::ACCESS_DENIED->name
+                    ),
+                    'TYPE' => 'ERROR',
+                ];
+            } else {
+                $this->errorList[] = CodeExceptionEnum::getMessage(CodeExceptionEnum::ACCESS_DENIED->name);
+            }
 
             return false;
         }
@@ -155,5 +177,25 @@ class AbstractEntityHandler
         }
 
         return $elementField;
+    }
+
+    /**
+     * Общая логика финальных операций
+     *
+     * @return void
+     */
+    protected function processFinishCommon(): void
+    {
+        global $APPLICATION;
+
+        if (empty($this->errorList)) {
+            return;
+        }
+
+        if (isset($this->errorList[CodeExceptionEnum::ACCESS_DENIED->name])
+            && $this->request->getRequestMethod() === 'GET') {
+            $APPLICATION->RestartBuffer();
+            $APPLICATION->AuthForm(Loc::getMessage('ACCESS_DENIED'));
+        }
     }
 }

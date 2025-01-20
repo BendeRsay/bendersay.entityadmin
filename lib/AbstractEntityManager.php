@@ -38,6 +38,9 @@ abstract class AbstractEntityManager
     /** @var string Название сущности */
     protected string $tableTitle;
 
+    /** @var mixed|false|string|null Права пользователя на модуль */
+    protected mixed $modRight;
+
     /**
      * Сессионный кеш
      *
@@ -75,6 +78,7 @@ abstract class AbstractEntityManager
         $this->tableTitle = EntityHelper::getEntityTitle($this->entityClass);
         $this->fieldReferenceList = $this->getFieldReferenceList();
         $this->localSession = Application::getInstance()->getLocalSession(static::class);
+        $this->modRight = \CMain::GetGroupRight(Config::MODULE_CODE);
     }
 
     /**
@@ -105,6 +109,16 @@ abstract class AbstractEntityManager
     public function getFieldList(): array
     {
         return $this->fieldList;
+    }
+
+    /**
+     * Права пользователя на модуль
+     *
+     * @return false|mixed|string|null
+     */
+    public function getModRight(): mixed
+    {
+        return $this->modRight;
     }
 
     /**
