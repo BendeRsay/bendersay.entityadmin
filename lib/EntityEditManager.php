@@ -276,27 +276,6 @@ class EntityEditManager extends AbstractEntityManager
     }
 
     /**
-     * Получаем поля для select
-     *
-     * @return array
-     */
-    public function getSelect(): array
-    {
-        $result = [];
-
-        foreach ($this->fieldList as $field) {
-            if ($field instanceof ScalarField || $field instanceof ExpressionField) {
-                if ($field->isPrivate()) {
-                    continue;
-                }
-                $result[] = $field->getName();
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      * Получаем данные элемента
      *
      * @return array
@@ -311,7 +290,7 @@ class EntityEditManager extends AbstractEntityManager
             $data = $this->getElementDataBySession();
         } else {
             $data = $this->entityClass::getRow([
-                'select' => $this->getSelect(),
+                'select' => $this->getSelectDefault(),
                 'filter' => [
                     '=' . $this->primaryCode => $this->elementId,
                 ],

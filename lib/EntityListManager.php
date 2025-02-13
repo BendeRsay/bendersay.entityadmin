@@ -109,6 +109,10 @@ class EntityListManager extends AbstractEntityManager
                 throw new NotSupportedException('field not supported');
             }
 
+            if ($field instanceof ScalarField && $field->isPrivate()) {
+                continue;
+            }
+
             $column = [
                 'id' => $field->getName(),
                 'name' => !empty($field->getTitle()) ? $field->getTitle() : $field->getName(),
@@ -129,6 +133,7 @@ class EntityListManager extends AbstractEntityManager
                 $column['default'] = false;
                 $columnList[] = FieldHelper::preparedColumn($field, $column);
             }
+            unset($column);
         }
 
         return $columnList;
@@ -268,7 +273,7 @@ class EntityListManager extends AbstractEntityManager
             }
 
             if ($field instanceof ScalarField) {
-                if ($this->searchField !== null && $field->getName() === $this->searchField) {
+                if (($this->searchField !== null && $field->getName() === $this->searchField) || $field->isPrivate()) {
                     continue;
                 }
 
@@ -291,6 +296,7 @@ class EntityListManager extends AbstractEntityManager
                         'multiple' => 'Y',
                     ];
                 }
+
                 $uiFilter[] = $uiFilterTmp;
             }
         }
@@ -343,7 +349,7 @@ class EntityListManager extends AbstractEntityManager
     protected function getElementList(): array
     {
         $this->queryResult = $this->entityClass::getList([
-            'select' => $this->gridOption->getUsedColumns() ?: ['*'],
+            'select' => $this->gridOption->getUsedColumns() ?: $this->getSelectDefault(),
             'filter' => $this->getFilter(),
             'offset' => $this->pageNavigation->getOffset(),
             'limit' => $this->pageNavigation->getLimit(),

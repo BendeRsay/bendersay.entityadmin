@@ -15,8 +15,10 @@ use Bitrix\Main\LoaderException;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\EnumField;
+use Bitrix\Main\ORM\Fields\ExpressionField;
 use Bitrix\Main\ORM\Fields\Field;
 use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Fields\ScalarField;
 use Bitrix\Main\SystemException;
 
 abstract class AbstractEntityManager
@@ -214,6 +216,27 @@ abstract class AbstractEntityManager
         }
 
         return array_combine($field->getValues(), $valueList);
+    }
+
+    /**
+     * Получаем поля для select
+     *
+     * @return array
+     */
+    protected function getSelectDefault(): array
+    {
+        $result = [];
+
+        foreach ($this->fieldList as $field) {
+            if ($field instanceof ScalarField || $field instanceof ExpressionField) {
+                if ($field->isPrivate()) {
+                    continue;
+                }
+                $result[] = $field->getName();
+            }
+        }
+
+        return $result;
     }
 
 }
