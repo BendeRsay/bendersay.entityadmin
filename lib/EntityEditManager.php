@@ -150,7 +150,11 @@ class EntityEditManager extends AbstractEntityManager
     {
         $identity = $this->entityClass::getEntity()->getAutoIncrement();
 
-        foreach ($this->fieldList as $key => $field) {
+        foreach ($this->fieldList as $field) {
+            if ($field instanceof ScalarField && $field->isPrivate()) {
+                continue;
+            }
+
             $expressionField = false;
             if ($field instanceof ArrayField) {
                 $reflection = new \ReflectionClass($field);
@@ -170,16 +174,16 @@ class EntityEditManager extends AbstractEntityManager
                 $title = !empty($field->getTitle()) ? $field->getTitle() : $field->getName();
                 $dataType = array_key_exists($code, $this->fieldReferenceList) ? 'reference' : $field->getDataType();
                 $required = $field->isRequired();
-            } elseif ($field instanceof Reference || $field instanceof OneToMany || $field instanceof ManyToMany || $field instanceof ExpressionField) {
+            } elseif ($field instanceof ExpressionField) {
+                $primary = false;
+                $autocomplete = false;
+                $code = $field->getName();
+                $title = !empty($field->getTitle()) ? $field->getTitle() : $field->getName();
+                $dataType = array_key_exists($code, $this->fieldReferenceList) ? 'reference' : $field->getDataType();
+                $required = false;
+                $expressionField = true;
+            } elseif ($field instanceof Reference || $field instanceof OneToMany || $field instanceof ManyToMany) {
                 continue;
-            } elseif (is_array($field)) {
-                $primary = $field['primary'];
-                $autocomplete = $field['autocomplete'];
-                $code = $key;
-                $title = $field['title'] ?? $key;
-                $dataType = array_key_exists($code, $this->fieldReferenceList) ? 'reference' : $field['data_type'];
-                $required = $field['required'] ?? false;
-                $expressionField = $field['expression'] ?? false;
             } else {
                 throw new NotSupportedException('field not supported');
             }
@@ -242,7 +246,7 @@ class EntityEditManager extends AbstractEntityManager
                     break;
                 case 'enum':
                     $widget = new EnumWidget();
-                    $widget->setEnumList($field->getValues());
+                    $widget->setEnumList($this->getEnumFieldItemList($field));
 
                     break;
                 default:
@@ -272,6 +276,27 @@ class EntityEditManager extends AbstractEntityManager
     }
 
     /**
+     * Получаем поля для select
+     *
+     * @return array
+     */
+    public function getSelect(): array
+    {
+        $result = [];
+
+        foreach ($this->fieldList as $field) {
+            if ($field instanceof ScalarField || $field instanceof ExpressionField) {
+                if ($field->isPrivate()) {
+                    continue;
+                }
+                $result[] = $field->getName();
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Получаем данные элемента
      *
      * @return array
@@ -286,9 +311,7 @@ class EntityEditManager extends AbstractEntityManager
             $data = $this->getElementDataBySession();
         } else {
             $data = $this->entityClass::getRow([
-                'select' => [
-                    '*',
-                ],
+                'select' => $this->getSelect(),
                 'filter' => [
                     '=' . $this->primaryCode => $this->elementId,
                 ],

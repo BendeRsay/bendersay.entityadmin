@@ -58,12 +58,12 @@ class EnumWidget extends StringWidget
 
         $html = '<select name="' . $this->getEditInputName() . '" size="' . $size . '" style="' . $style . '">';
 
-        foreach ($this->getEnumList() as $enumValue) {
+        foreach ($this->getEnumList() as $enumKey => $enumValue) {
             $selected = '';
             if ($enumValue === $this->getValue()) {
                 $selected = 'selected';
             }
-            $html .= '<option value="' . $enumValue . '" ' . $selected . ' >' . $enumValue . '</option>';
+            $html .= '<option value="' . $enumKey . '" ' . $selected . ' >' . $enumValue . '</option>';
         }
 
         return $html . '</select>' . $link;

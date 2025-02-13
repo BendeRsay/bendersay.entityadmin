@@ -14,6 +14,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\LoaderException;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Fields\EnumField;
 use Bitrix\Main\ORM\Fields\Field;
 use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\SystemException;
@@ -190,6 +191,29 @@ abstract class AbstractEntityManager
         }
 
         return $result;
+    }
+
+    /**
+     * Получаем список значений поля EnumField
+     *
+     * @param EnumField $field
+     *
+     * @return array
+     *
+     * @throws SystemException
+     */
+    protected function getEnumFieldItemList(EnumField $field): array
+    {
+        $valueList = $field->getValues();
+        $fetchDataModifiers = $field->getFetchDataModifiers();
+
+        if (!empty($fetchDataModifiers)) {
+            foreach ($fetchDataModifiers as $callback) {
+                $valueList = array_map($callback, $valueList);
+            }
+        }
+
+        return array_combine($field->getValues(), $valueList);
     }
 
 }

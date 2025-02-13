@@ -38,8 +38,12 @@
 
 <img src="./docs/images/settings/module-install.png" alt="аннотация меню" width="500"/>
 
-Добавить в `.gitignore` проекта папку `/local/modules/bendersay.entityadmin` и файлы `/admin/bendersay_entityadmin_entity_element_edit.php`,
-`/admin/bendersay_entityadmin_entity_element_list.php`, `/admin/bendersay_entityadmin_reference_element_list.php` в папке `bitrix`.
+Добавить в `.gitignore` проекта:
+ * папку `/local/modules/bendersay.entityadmin`
+ * файлы в папке `bitrix`:
+   * `/admin/bendersay_entityadmin_entity_element_edit.php`,
+   * `/admin/bendersay_entityadmin_entity_element_list.php`,
+   * `/admin/bendersay_entityadmin_reference_element_list.php`
 
 ## Структура модуля
 

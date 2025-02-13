@@ -9,6 +9,7 @@ use Bitrix\Main\ORM\Fields\DateField;
 use Bitrix\Main\ORM\Fields\DatetimeField;
 use Bitrix\Main\ORM\Fields\DecimalField;
 use Bitrix\Main\ORM\Fields\EnumField;
+use Bitrix\Main\ORM\Fields\ExpressionField;
 use Bitrix\Main\ORM\Fields\FloatField;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\ScalarField;
@@ -53,7 +54,7 @@ class FieldHelper
      *
      * @return array
      */
-    public static function preparedColumn(ScalarField $field, array $column): array
+    public static function preparedColumn(ScalarField|ExpressionField $field, array $column): array
     {
         $editable = !($field->isPrimary() || $field->isAutocomplete());
 

@@ -14,6 +14,8 @@ use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Fields\ArrayField;
 use Bitrix\Main\ORM\Fields\BooleanField;
 use Bitrix\Main\ORM\Fields\DatetimeField;
+use Bitrix\Main\ORM\Fields\EnumField;
+use Bitrix\Main\ORM\Fields\ExpressionField;
 use Bitrix\Main\ORM\Fields\Field;
 use Bitrix\Main\ORM\Fields\ScalarField;
 use Bitrix\Main\ORM\Query\Result as QueryResult;
@@ -123,6 +125,9 @@ class EntityListManager extends AbstractEntityManager
                 $columnList[] = $column;
             } elseif ($field instanceof ScalarField) {
                 $columnList[] = FieldHelper::preparedColumn($field, $column);
+            } elseif ($field instanceof ExpressionField) {
+                $column['default'] = false;
+                $columnList[] = FieldHelper::preparedColumn($field, $column);
             }
         }
 
@@ -163,7 +168,7 @@ class EntityListManager extends AbstractEntityManager
                     }
 
                     $rowList[$elemKey]['data'][$field->getName()] = $fieldDataJson;
-                } elseif ($field instanceof ScalarField) {
+                } elseif ($field instanceof ScalarField || $field instanceof ExpressionField) {
                     $this->preparedRowFieldScalar($rowList, $field, $elemKey, $filedValue);
                 }
             }
@@ -250,6 +255,7 @@ class EntityListManager extends AbstractEntityManager
      * @return array
      *
      * @throws NotSupportedException
+     * @throws SystemException
      */
     public function getUiFilter(): array
     {
@@ -276,6 +282,14 @@ class EntityListManager extends AbstractEntityManager
                 // для BooleanField делаем фильтр цифровым
                 if ($field instanceof BooleanField) {
                     $uiFilterTmp['valueType'] = 'numeric';
+                }
+
+                // для EnumField получаем список вариантов
+                if ($field instanceof EnumField) {
+                    $uiFilterTmp['items'] = $this->getEnumFieldItemList($field);
+                    $uiFilterTmp['params'] = [
+                        'multiple' => 'Y',
+                    ];
                 }
                 $uiFilter[] = $uiFilterTmp;
             }
@@ -401,7 +415,7 @@ class EntityListManager extends AbstractEntityManager
      *
      * @return void
      */
-    protected function preparedRowFieldScalar(&$rowList, ScalarField $field, $elemKey, $value): void
+    protected function preparedRowFieldScalar(&$rowList, ScalarField|ExpressionField $field, $elemKey, $value): void
     {
         if ($field->isPrimary()) {
             $rowList[$elemKey]['id'] = $value;
