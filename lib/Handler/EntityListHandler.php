@@ -7,6 +7,7 @@ use Bitrix\Main\Application;
 use Bitrix\Main\Diag\ExceptionHandlerLog;
 use Bitrix\Main\Engine\Response\Json;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\ORM\Fields\ScalarField;
 use Bitrix\Main\Web\Uri;
 
@@ -24,8 +25,8 @@ class EntityListHandler extends AbstractEntityHandler
      */
     public function processGet(): self
     {
-        $elemId = $this->request->get('id');
-        if (empty($elemId) || $this->request->get('delete') === null) {
+        $id = $this->request->get('id');
+        if (empty($id) || $this->request->get('delete') === null) {
             return $this;
         }
 
@@ -36,7 +37,7 @@ class EntityListHandler extends AbstractEntityHandler
         }
 
         try {
-            $result = $this->entityClass::delete($elemId);
+            $result = $this->entityClass::delete($this->preparedId($id));
             if (!$result->isSuccess()) {
                 $this->errorList = $result->getErrorMessages();
             }
@@ -56,6 +57,8 @@ class EntityListHandler extends AbstractEntityHandler
      * Обработка POST запроса
      *
      * @return $this
+     *
+     * @throws NotSupportedException
      */
     public function processPost(): self
     {
@@ -130,12 +133,12 @@ class EntityListHandler extends AbstractEntityHandler
     {
         foreach ($this->request->getPost('ID') as $id) {
             try {
-                $result = $this->entityClass::delete($id);
+                $result = $this->entityClass::delete($this->preparedId($id));
                 if (!$result->isSuccess()) {
                     foreach ($result->getErrors() as $error) {
                         $this->errorList[] = [
                             'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_DELETE', [
-                                '#primaryCode#' => $this->primaryCode,
+                                '#primaryCode#' => $this->primaryFieldList,
                                 '#id#' => $id,
                             ]),
                             'TEXT' => $error->getMessage(),
@@ -150,7 +153,7 @@ class EntityListHandler extends AbstractEntityHandler
                 );
                 $this->errorList[] = [
                     'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_DELETE', [
-                        '#primaryCode#' => $this->primaryCode,
+                        '#primaryCode#' => $this->primaryFieldList,
                         '#id#' => $id,
                     ]),
                     'TEXT' => $e->getMessage(),
@@ -182,12 +185,12 @@ class EntityListHandler extends AbstractEntityHandler
         foreach ($postFieldList as $id => $elementField) {
             try {
                 $preparedUpdateFieldList = $this->getPreparedUpdateFieldList($elementField, $scalarFieldList);
-                $result = $this->entityClass::update($id, $preparedUpdateFieldList);
+                $result = $this->entityClass::update($this->preparedId($id), $preparedUpdateFieldList);
                 if (!$result->isSuccess()) {
                     foreach ($result->getErrors() as $error) {
                         $this->errorList[] = [
                             'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_EDIT', [
-                                '#primaryCode#' => $this->primaryCode,
+                                '#primaryCode#' => $this->primaryFieldList,
                                 '#id#' => $id,
                             ]),
                             'TEXT' => $error->getMessage(),
@@ -203,7 +206,7 @@ class EntityListHandler extends AbstractEntityHandler
                 );
                 $this->errorList[] = [
                     'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_EDIT', [
-                        '#primaryCode#' => $this->primaryCode,
+                        '#primaryCode#' => $this->primaryFieldList,
                         '#id#' => $id,
                     ]),
                     'TEXT' => $e->getMessage(),
@@ -211,5 +214,20 @@ class EntityListHandler extends AbstractEntityHandler
                 ];
             }
         }
+    }
+
+    /**
+     * Подготавливаем id для использования
+     *
+     * @param string $id
+     *
+     * @return array
+     */
+    protected function preparedId(string $id): array
+    {
+        $idList = [];
+        parse_str($id, $idList);
+
+        return $idList;
     }
 }

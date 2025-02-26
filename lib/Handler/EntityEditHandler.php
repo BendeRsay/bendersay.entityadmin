@@ -7,6 +7,7 @@ use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bitrix\Main\Application;
 use Bitrix\Main\Diag\ExceptionHandlerLog;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\ORM\Fields\ScalarField;
 use Bitrix\Main\Web\Uri;
 
@@ -15,8 +16,8 @@ use Bitrix\Main\Web\Uri;
  */
 class EntityEditHandler extends AbstractEntityHandler
 {
-    /** @var null|string id элемента с которым работаем, может быть строкой или числом */
-    protected ?string $elementId;
+    /** @var null|array id элемента с которым работаем, массив (составной ключ) */
+    protected ?array $elementPrimary;
 
     /**
      * Обработка GET запроса
@@ -33,6 +34,8 @@ class EntityEditHandler extends AbstractEntityHandler
      * Обработка POST запроса
      *
      * @return $this
+     *
+     * @throws NotSupportedException
      */
     public function processPost(): self
     {
@@ -40,13 +43,15 @@ class EntityEditHandler extends AbstractEntityHandler
             return $this;
         }
 
-        $this->elementId = $this->request->get('id');
+        $id = $this->request->get('id');
+        parse_str($id, $this->elementPrimary);
+
         $actionAdd = $this->request->get('add') === 'Y';
 
-        if (empty($this->elementId) && !$actionAdd) {
+        if (empty($this->elementPrimary) && !$actionAdd) {
             $this->errorList[] = Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_DELETE_ID_TEXT', [
-                '#primaryCode#' => $this->primaryCode,
-                '#id#' => $this->elementId,
+                '#primaryCode#' => $this->primaryFieldList,
+                '#id#' => $this->elementPrimary,
             ]);
 
             return $this;
@@ -93,7 +98,9 @@ class EntityEditHandler extends AbstractEntityHandler
         }
         if ($this->request->getPost('apply') === Loc::getMessage('BENDERSAY_ENTITYADMIN_ACTION_APPLY')) {
             $uri->deleteParams(['add']);
-            $uri->addParams(['id' => $this->elementId]);
+            $uri->addParams(
+                ['id' => EntityHelper::encodeUrlPrimaryId($this->elementPrimary, $this->entityClass::getEntity())]
+            );
             LocalRedirect($uri->getUri());
         }
     }
@@ -129,7 +136,7 @@ class EntityEditHandler extends AbstractEntityHandler
     protected function postActionDelete(): void
     {
         try {
-            $result = $this->entityClass::delete($this->elementId);
+            $result = $this->entityClass::delete($this->elementPrimary);
             if (!$result->isSuccess()) {
                 $this->errorList[] = array_merge($this->errorList, $result->getErrorMessages());
             } else {
@@ -171,7 +178,7 @@ class EntityEditHandler extends AbstractEntityHandler
             if ($actionAdd) {
                 $result = $this->entityClass::add($preparedUpdateFieldList);
             } else {
-                $result = $this->entityClass::update($this->elementId, $preparedUpdateFieldList);
+                $result = $this->entityClass::update($this->elementPrimary, $preparedUpdateFieldList);
             }
 
             if (!$result->isSuccess()) {
@@ -179,7 +186,7 @@ class EntityEditHandler extends AbstractEntityHandler
                     $this->errorList[] = $error->getMessage();
                 }
             } else {
-                $this->elementId = $result->getId();
+                $this->elementPrimary = $result->getPrimary();
             }
             unset($result);
         } catch (\Exception $e) {

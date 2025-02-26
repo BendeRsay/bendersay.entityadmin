@@ -73,7 +73,7 @@ class EntityReferenceManager extends EntityListManager
         $reflectionClass = new \ReflectionClass($dataClass);
 
         if ($reflectionClass->implementsInterface(DataManagerInterface::class)) {
-            /** @var $dataClass DataManagerInterface */
+            /** @var DataManagerInterface $dataClass */
             $refKey = $dataClass::getEntityReferenceShowField();
         }
 

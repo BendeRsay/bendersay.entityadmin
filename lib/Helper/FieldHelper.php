@@ -47,9 +47,11 @@ class FieldHelper
     public const string TYPE_TEXT = 'text';
 
     /**
-     * Дополняем $column типом колонок
+     * Дополняем $column:
+     *  1. типом колонок
+     *  2. возможность редактирования
      *
-     * @param ScalarField $field
+     * @param ScalarField|ExpressionField $field
      * @param array $column
      *
      * @return array

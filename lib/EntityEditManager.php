@@ -19,11 +19,20 @@ use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\ObjectNotFoundException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Fields\ArrayField;
+use Bitrix\Main\ORM\Fields\BooleanField;
+use Bitrix\Main\ORM\Fields\DateField;
+use Bitrix\Main\ORM\Fields\DatetimeField;
+use Bitrix\Main\ORM\Fields\DecimalField;
+use Bitrix\Main\ORM\Fields\EnumField;
 use Bitrix\Main\ORM\Fields\ExpressionField;
+use Bitrix\Main\ORM\Fields\FloatField;
+use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
 use Bitrix\Main\ORM\Fields\Relations\OneToMany;
 use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\ORM\Fields\ScalarField;
+use Bitrix\Main\ORM\Fields\StringField;
+use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\SystemException;
 
 /**
@@ -31,8 +40,8 @@ use Bitrix\Main\SystemException;
  */
 class EntityEditManager extends AbstractEntityManager
 {
-    /** @var null|string id элемента с которым работаем, может быть строкой или числом */
-    protected ?string $elementId;
+    /** @var array id элемента с которым работаем, массив (составной ключ) */
+    protected array $elementPrimary = [];
 
     /** @var array данные элемента */
     protected array $elementData = [];
@@ -47,13 +56,15 @@ class EntityEditManager extends AbstractEntityManager
     public function __construct()
     {
         parent::__construct();
-        $this->elementId = $this->request->get('id');
+        $id = $this->request->get('id');
         $this->actionAdd = $this->request->get('add') === 'Y';
 
-        if (!$this->actionAdd && empty($this->elementId)) {
+        if (!$this->actionAdd && empty($id)) {
             /* @phpstan-ignore-next-line */
-            throw new ArgumentOutOfRangeException($this->elementId, 1, PHP_INT_MAX);
+            throw new ArgumentOutOfRangeException($id, 1, PHP_INT_MAX);
         }
+        parse_str($id, $this->elementPrimary);
+
         $this->elementData = $this->getElementData();
     }
 
@@ -148,38 +159,31 @@ class EntityEditManager extends AbstractEntityManager
      */
     public function renderFieldList(): void
     {
-        $identity = $this->entityClass::getEntity()->getAutoIncrement();
-
         foreach ($this->fieldList as $field) {
             if ($field instanceof ScalarField && $field->isPrivate()) {
                 continue;
             }
 
             $expressionField = false;
+            $referenceField = false;
             if ($field instanceof ArrayField) {
-                $reflection = new \ReflectionClass($field);
-                $serializationType = $reflection->getProperty('serializationType');
-                $serializationType->setAccessible(true);
-
                 $primary = $field->isPrimary();
                 $autocomplete = $field->isAutocomplete();
                 $code = $field->getName();
                 $title = !empty($field->getTitle()) ? $field->getTitle() : $field->getName();
-                $dataType = $serializationType->getValue($field);
                 $required = $field->isRequired();
             } elseif ($field instanceof ScalarField) {
                 $primary = $field->isPrimary();
                 $autocomplete = $field->isAutocomplete();
                 $code = $field->getName();
                 $title = !empty($field->getTitle()) ? $field->getTitle() : $field->getName();
-                $dataType = array_key_exists($code, $this->fieldReferenceList) ? 'reference' : $field->getDataType();
                 $required = $field->isRequired();
+                $referenceField = array_key_exists($code, $this->fieldReferenceList);
             } elseif ($field instanceof ExpressionField) {
                 $primary = false;
                 $autocomplete = false;
                 $code = $field->getName();
                 $title = !empty($field->getTitle()) ? $field->getTitle() : $field->getName();
-                $dataType = array_key_exists($code, $this->fieldReferenceList) ? 'reference' : $field->getDataType();
                 $required = false;
                 $expressionField = true;
             } elseif ($field instanceof Reference || $field instanceof OneToMany || $field instanceof ManyToMany) {
@@ -189,10 +193,7 @@ class EntityEditManager extends AbstractEntityManager
             }
 
             // делаем редактируемыми primary поля без autoincrement
-            if ((
-                ($primary && $identity !== null)
-                    || $autocomplete || $expressionField
-            ) && $this->actionAdd) {
+            if (($autocomplete || $expressionField) && $this->actionAdd) {
                 continue;
             }
 
@@ -201,59 +202,69 @@ class EntityEditManager extends AbstractEntityManager
                 $code => $this->elementData[$code],
             ];
 
-            switch ($dataType) {
-                case 'integer':
-                case 'float':
-                    $widget = new NumberWidget();
+            if ($referenceField) {
+                $widget = new OrmElementWidget(
+                    [
+                        'ENTITY' => $this->fieldReferenceList[$code]->entity,
+                        'INPUT_SIZE' => 5,
+                        'WINDOW_WIDTH' => 1000,
+                        'WINDOW_HEIGHT' => 800,
+                        'TITLE_FIELD_NAME' => $code,
+                        'TEMPLATE' => 'select',
+                        'ADDITIONAL_URL_PARAMS' => [],
+                        'REFERENCE_VALUE' => $this->fieldReferenceList[$field->getName(
+                        )]->itemList[$this->elementData[$code]],
+                    ]
+                );
+            } else {
+                switch ($field) {
+                    case $field instanceof IntegerField:
+                    case $field instanceof FloatField:
+                    case $field instanceof DecimalField:
+                        $widget = new NumberWidget();
 
-                    break;
-                case 'string':
-                    $widget = new StringWidget();
+                        break;
 
-                    break;
-                case 'text':
-                    $widget = new TextAreaWidget();
+                    case $field instanceof TextField:
+                        $widget = new TextAreaWidget();
 
-                    break;
-                case 'date':
-                case 'datetime':
-                    $widget = new DateTimeWidget();
+                        break;
 
-                    break;
-                case 'boolean':
-                    $widget = new CheckboxWidget();
+                    case $field instanceof StringField:
+                    case $field instanceof ExpressionField:
+                        $widget = new StringWidget();
 
-                    break;
-                case 'json':
-                    $widget = new JsonArrayWidget();
+                        break;
 
-                    break;
-                case 'reference':
-                    $widget = new OrmElementWidget(
-                        [
-                            'ENTITY' => $this->fieldReferenceList[$code]->entity,
-                            'INPUT_SIZE' => 5,
-                            'WINDOW_WIDTH' => 1000,
-                            'WINDOW_HEIGHT' => 800,
-                            'TITLE_FIELD_NAME' => $code,
-                            'TEMPLATE' => 'select',
-                            'ADDITIONAL_URL_PARAMS' => [],
-                            'REFERENCE_VALUE' => $this->fieldReferenceList[$field->getName(
-                            )]->itemList[$this->elementData[$code]],
-                        ]
-                    );
+                    case $field instanceof DateField:
+                    case $field instanceof DatetimeField:
+                        $widget = new DateTimeWidget();
 
-                    break;
-                case 'enum':
-                    $widget = new EnumWidget();
-                    $widget->setEnumList($this->getEnumFieldItemList($field));
+                        break;
 
-                    break;
-                default:
-                    continue 2;
+                    case $field instanceof BooleanField:
+                        $widget = new CheckboxWidget();
+
+                        break;
+
+                    case $field instanceof ArrayField:
+                        $field->configureSerializationJson();
+                        $widget = new JsonArrayWidget();
+
+                        break;
+
+                    case $field instanceof EnumField:
+                        $widget = new EnumWidget();
+                        $widget->setEnumList($this->getEnumFieldItemList($field));
+
+                        break;
+
+                    default:
+                        continue 2;
+                }
             }
 
-            $showBasicEditField = ($primary && $identity !== null)
+            $showBasicEditField = ($primary && !$this->actionAdd)
                 || $autocomplete || $expressionField || $this->modRight !== 'W';
 
             $widget->setEntityName($this->entityClass);
@@ -289,11 +300,13 @@ class EntityEditManager extends AbstractEntityManager
         if ($this->actionAdd) {
             $data = $this->getElementDataBySession();
         } else {
+            $filter = [];
+            foreach ($this->primaryFieldList as $field) {
+                $filter['=' . $field] = $this->elementPrimary[$field];
+            }
             $data = $this->entityClass::getRow([
                 'select' => $this->getSelectDefault(),
-                'filter' => [
-                    '=' . $this->primaryCode => $this->elementId,
-                ],
+                'filter' => $filter,
             ]);
             if (empty($data)) {
                 throw new ObjectNotFoundException(Loc::getMessage('BENDERSAY_ENTITYADMIN_ELEMENT_NOT_FOUND'));

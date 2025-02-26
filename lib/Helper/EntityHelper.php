@@ -3,6 +3,7 @@
 namespace Bendersay\Entityadmin\Helper;
 
 use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Entity;
 
 /**
  * Хелпер для работы с сущностями
@@ -85,5 +86,27 @@ class EntityHelper
     public static function getEntityTitle(DataManager|string $entity): string
     {
         return $entity::getTitle() ?? $entity::getTableName();
+    }
+
+    /**
+     * Кодирование первичного ключа элемента сущности для использования в url
+     *
+     * @param array $elem
+     * @param Entity $entity
+     *
+     * @return string
+     */
+    public static function encodeUrlPrimaryId(array $elem, Entity $entity): string
+    {
+        $primary = $entity->getPrimaryArray();
+        $data = [];
+
+        if (is_array($primary)) {
+            foreach ($primary as $key) {
+                $data[$key] = $elem[$key];
+            }
+        }
+
+        return http_build_query($data);
     }
 }

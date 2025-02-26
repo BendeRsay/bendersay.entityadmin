@@ -13,6 +13,7 @@ use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\ObjectException;
 use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Fields\ArrayField;
 use Bitrix\Main\ORM\Fields\BooleanField;
 use Bitrix\Main\ORM\Fields\DatetimeField;
 use Bitrix\Main\ORM\Fields\ScalarField;
@@ -38,8 +39,8 @@ class AbstractEntityHandler
     /** @var mixed|false|string|null Права пользователя на модуль */
     protected mixed $modRight;
 
-    /** @var string Код primary поля */
-    protected string $primaryCode;
+    /** @var array Primary поля */
+    protected array $primaryFieldList;
 
     /**
      * Сессионный кеш
@@ -55,7 +56,7 @@ class AbstractEntityHandler
         $this->manager = $manager;
         $this->request = $this->manager->getRequest();
         $this->entityClass = $this->manager->getEntityClass();
-        $this->primaryCode = $this->entityClass::getEntity()->getPrimary();
+        $this->primaryFieldList = $this->entityClass::getEntity()->getPrimaryArray();
         $this->modRight = \CMain::GetGroupRight(Config::MODULE_CODE);
         $this->localSession = Application::getInstance()->getLocalSession(self::class);
 
@@ -109,6 +110,7 @@ class AbstractEntityHandler
      * Если пустое значение и у пля есть DefaultValue - сохраняем его
      * Для BooleanField в списке меняем Y, N на bool
      * Для DatetimeField приводим к DateTime
+     * Для ArrayField из Json приводим к массиву
      *
      * @param array $elementField поля элемента
      * @param ScalarField[] $scalarFieldList список скалярных полей элемента
@@ -157,23 +159,34 @@ class AbstractEntityHandler
                 }
             }
 
-            // TODO поддержка поля ArrayField
-            //            if ($field instanceof ArrayField) {
-            //                try {
-            //                    if (!isset($elementField[$fieldCode])) {
-            //                        continue;
-            //                    }
-            //
-            //                    $elementField[$fieldCode] = !empty($elementField[$fieldCode])
-            //                        ? $field->decode($elementField[$fieldCode])
-            //                        : ($field->isNullable() ? null : $field->getDefaultValue());
-            //                } catch (\Throwable $ex) {
-            //                    $errorMessage = "Ошибка \"{$ex->getMessage()}\" в поле {$fieldCode}";
-            //                    $result = new AddResult();
-            //                    $result->setId($this->request->get('id'));
-            //                    $result->addError(new Error($errorMessage, $ex->getCode()));
-            //                }
-            //            }
+            if ($field instanceof ArrayField) {
+                if (!isset($elementField[$fieldCode])) {
+                    continue;
+                }
+
+                // Т.к. в виджете всегда показываем в Json, тут тоже преобразуем из него
+                $reflection = new \ReflectionClass($field);
+                $serializationType = $reflection->getProperty('serializationType')->getValue($field);
+                $encodeFunction = $reflection->getProperty('encodeFunction')->getValue($field);
+                $field->configureSerializationJson();
+
+                $elementField[$fieldCode] = !empty($elementField[$fieldCode])
+                    ? $field->decode($elementField[$fieldCode])
+                    : ($field->isNullable() ? null : $field->getDefaultValue());
+
+                switch ($serializationType) {
+                    case 'json':
+                        break;
+                    case 'php':
+                        $field->configureSerializationPhp();
+
+                        break;
+                    case 'custom':
+                        $field->configureSerializeCallback($encodeFunction);
+
+                        break;
+                }
+            }
         }
 
         return $elementField;

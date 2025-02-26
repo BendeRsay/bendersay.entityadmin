@@ -32,11 +32,11 @@ abstract class AbstractEntityManager
     /** @var Field[] Поля сущности */
     protected array $fieldList;
 
-    /** @var array Поля связей с другими сущностями */
+    /** @var FieldReference[] Поля связей с другими сущностями */
     protected array $fieldReferenceList;
 
-    /** @var string Код primary поля */
-    protected string $primaryCode;
+    /** @var array Primary поля */
+    protected array $primaryFieldList;
 
     /** @var string Название сущности */
     protected string $tableTitle;
@@ -76,7 +76,7 @@ abstract class AbstractEntityManager
 
         $this->entityClass = $entityClass;
         $entity = $this->entityClass::getEntity();
-        $this->primaryCode = $entity->getPrimary();
+        $this->primaryFieldList = $entity->getPrimaryArray();
         $this->fieldList = $entity->getFields();
         $this->tableTitle = EntityHelper::getEntityTitle($this->entityClass);
         $this->fieldReferenceList = $this->getFieldReferenceList();
@@ -143,12 +143,13 @@ abstract class AbstractEntityManager
                 if ($link === false) {
                     continue;
                 }
-                $foreignKey = array_key_first($field->getElementals());
+                $foreignKey = array_key_first($link);
 
                 $result[$foreignKey] = new FieldReference(
                     $field->getRefEntity()->getDataClass(),
                     $fieldName,
                     $foreignKey,
+                    $field->getRefEntity()->getPrimaryArray(),
                     $this->getItemList($field),
                 );
             }
@@ -175,7 +176,7 @@ abstract class AbstractEntityManager
         $reflectionClass = new \ReflectionClass($dataClassRef);
 
         if ($reflectionClass->implementsInterface(DataManagerInterface::class)) {
-            /** @var $dataClassRef DataManagerInterface */
+            /** @var DataManagerInterface|DataManager $dataClassRef */
             $keyName = $dataClassRef::getEntityReferenceShowField();
             $keyPrimary = $entityRef->getPrimary();
 

@@ -174,9 +174,10 @@ class EntityListManager extends AbstractEntityManager
 
                     $rowList[$elemKey]['data'][$field->getName()] = $fieldDataJson;
                 } elseif ($field instanceof ScalarField || $field instanceof ExpressionField) {
-                    $this->preparedRowFieldScalar($rowList, $field, $elemKey, $filedValue);
+                    $this->preparedRowFieldScalarExpression($rowList, $field, $elemKey, $filedValue);
                 }
             }
+            $rowList[$elemKey]['id'] = http_build_query($rowList[$elemKey]['id']);
         }
 
         return $rowList;
@@ -378,7 +379,7 @@ class EntityListManager extends AbstractEntityManager
             return [];
         }
 
-        $primaryKey = $this->entityClass::getEntity()->getPrimary();
+        $entity = $this->entityClass::getEntity();
 
         return [
             [
@@ -388,7 +389,7 @@ class EntityListManager extends AbstractEntityManager
                     . EntityHelper::getEditUrl(
                         [
                             'entity' => $this->entityClass,
-                            'id' => $elem[$primaryKey],
+                            'id' => EntityHelper::encodeUrlPrimaryId($elem, $entity),
                         ]
                     )
                     . '"',
@@ -403,7 +404,7 @@ class EntityListManager extends AbstractEntityManager
                         [
                             'entity' => $this->entityClass,
                             'delete' => 'Y',
-                            'id' => $elem[$primaryKey],
+                            'id' => EntityHelper::encodeUrlPrimaryId($elem, $entity),
                         ]
                     )
                     . '"}',
@@ -415,16 +416,20 @@ class EntityListManager extends AbstractEntityManager
      * Подготавливаем поле ScalarField для отображения
      *
      * @param $rowList
-     * @param ScalarField $field
+     * @param ScalarField|ExpressionField $field
      * @param $elemKey
      * @param $value
      *
      * @return void
      */
-    protected function preparedRowFieldScalar(&$rowList, ScalarField|ExpressionField $field, $elemKey, $value): void
-    {
+    protected function preparedRowFieldScalarExpression(
+        &$rowList,
+        ScalarField|ExpressionField $field,
+        $elemKey,
+        $value
+    ): void {
         if ($field->isPrimary()) {
-            $rowList[$elemKey]['id'] = $value;
+            $rowList[$elemKey]['id'][$field->getName()] = $value;
         }
         $rowList[$elemKey]['data'][$field->getName()] = $value;
 
@@ -433,9 +438,12 @@ class EntityListManager extends AbstractEntityManager
             $rowList[$elemKey]['columns'][$field->getName()] = '[' . $value . '] ' . $valueRef;
 
             if ($this->modRight === 'W') {
+                $entityRef = $this->fieldReferenceList[$field->getName()]->entity;
+                $primaryRef = $this->fieldReferenceList[$field->getName()]->primaryArray;
+
                 $url = EntityHelper::getEditUrl([
-                    'entity' => $this->fieldReferenceList[$field->getName()]->entity,
-                    'id' => $value,
+                    'entity' => $entityRef,
+                    'id' => EntityHelper::encodeUrlPrimaryId([$primaryRef[0] => $value], $entityRef::getEntity()),
                 ]);
                 $rowList[$elemKey]['columns'][$field->getName()]
                     = '[<a href="' . $url . '" target="_blank">' . $value . '</a>] ' . $valueRef;
