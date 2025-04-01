@@ -22,7 +22,7 @@ try {
         foreach ($handler->getError() as $error) {
             CAdminMessage::ShowMessage(
                 [
-                    'MESSAGE' => $error,
+                    'MESSAGE' => is_array($error) ? implode("\n", $error) : $error,
                     'HTML' => true,
                     'TYPE' => 'ERROR',
                 ]
@@ -52,12 +52,12 @@ try {
           id="editform">
         <?php
         $tabControl->Begin();
-    $tabControl->BeginNextTab();
+        $tabControl->BeginNextTab();
 
-    $entityEditManager->renderFieldList();
-    $entityEditManager->clearDataBySession();
+        $entityEditManager->renderFieldList();
+        $entityEditManager->clearDataBySession();
 
-    ?>
+        ?>
 
         <?= bitrix_sessid_post() ?>
 
@@ -65,9 +65,9 @@ try {
         <input type="hidden" name="delete" id="delete" value="">
 
         <?php
-    $tabControl->Buttons($entityEditManager->getTabControlButtonList());
-    $tabControl->End();
-    ?>
+        $tabControl->Buttons($entityEditManager->getTabControlButtonList());
+        $tabControl->End();
+        ?>
     </form>
 
     <?php

@@ -2,6 +2,8 @@
 
 namespace Bendersay\Entityadmin;
 
+use Bendersay\Entityadmin\Enum\AccessLevelEnum;
+use Bendersay\Entityadmin\Enum\CodeExceptionEnum;
 use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Install\Config;
 use Bendersay\Entityadmin\Readonly\FieldReference;
@@ -19,6 +21,7 @@ use Bitrix\Main\ORM\Fields\ExpressionField;
 use Bitrix\Main\ORM\Fields\Field;
 use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\ORM\Fields\ScalarField;
+use Bitrix\Main\Security\SecurityException;
 use Bitrix\Main\SystemException;
 
 abstract class AbstractEntityManager
@@ -81,7 +84,15 @@ abstract class AbstractEntityManager
         $this->tableTitle = EntityHelper::getEntityTitle($this->entityClass);
         $this->fieldReferenceList = $this->getFieldReferenceList();
         $this->localSession = Application::getInstance()->getLocalSession(static::class);
-        $this->modRight = \CMain::GetGroupRight(Config::MODULE_CODE);
+        $this->modRight = EntityHelper::getGroupRight($this->entityClass);
+
+        if ($this->modRight === AccessLevelEnum::DENIED->value) {
+            throw new SecurityException(
+                CodeExceptionEnum::getMessage(
+                    CodeExceptionEnum::ACCESS_DENIED->name
+                )
+            );
+        }
     }
 
     /**
@@ -239,5 +250,4 @@ abstract class AbstractEntityManager
 
         return $result;
     }
-
 }

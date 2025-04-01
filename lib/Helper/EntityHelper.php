@@ -2,6 +2,10 @@
 
 namespace Bendersay\Entityadmin\Helper;
 
+use Bendersay\Entityadmin\Entity\EntityNameSpaceGroupTable;
+use Bendersay\Entityadmin\Entity\EntityNameSpaceTable;
+use Bendersay\Entityadmin\Install\Config;
+use Bitrix\Main\Engine\CurrentUser;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Entity;
 
@@ -108,5 +112,46 @@ class EntityHelper
         }
 
         return http_build_query($data);
+    }
+
+    /**
+     * Получение прав доступа к сущности
+     *
+     * @param DataManager|string $entityClass
+     *
+     * @return string
+     *
+     * @throws \Bitrix\Main\ArgumentException
+     * @throws \Bitrix\Main\ObjectPropertyException
+     * @throws \Bitrix\Main\SystemException
+     */
+    public static function getGroupRight(DataManager|string $entityClass): string
+    {
+        $access = \CMain::GetGroupRight(Config::MODULE_CODE);
+
+        $entityNameSpace = EntityNameSpaceTable::getRow([
+            'select' => ['id'],
+            'filter' => ['=namespace' => $entityClass],
+        ]);
+        if ($entityNameSpace === null) {
+            return $access;
+        }
+
+        $accessEntityNameSpaceGroup = EntityNameSpaceGroupTable::getList([
+            'select' => ['accessLevelEnum'],
+            'filter' => [
+                '=namespaceId' => (int)$entityNameSpace['id'],
+                '=GROUP_ID' => CurrentUser::get()->getUserGroups(),
+            ],
+        ])->fetchAll();
+        if (empty($accessEntityNameSpaceGroup)) {
+            return $access;
+        }
+        $accessList = array_merge(
+            [$access],
+            array_column($accessEntityNameSpaceGroup, 'accessLevelEnum', 'accessLevelEnum')
+        );
+
+        return max($accessList);
     }
 }

@@ -40,8 +40,9 @@ class EntityListHandler extends AbstractEntityHandler
             $result = $this->entityClass::delete($this->preparedId($id));
             if (!$result->isSuccess()) {
                 $this->errorList = $result->getErrorMessages();
+            } else {
+                LocalRedirect(EntityHelper::getListUrl(['entity' => $this->entityClass]));
             }
-            LocalRedirect(EntityHelper::getListUrl(['entity' => $this->entityClass]));
         } catch (\Exception $e) {
             Application::getInstance()->getExceptionHandler()->writeToLog(
                 $e,
@@ -138,7 +139,7 @@ class EntityListHandler extends AbstractEntityHandler
                     foreach ($result->getErrors() as $error) {
                         $this->errorList[] = [
                             'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_DELETE', [
-                                '#primaryCode#' => $this->primaryFieldList,
+                                '#primaryCode#' => implode(',', $this->primaryFieldList),
                                 '#id#' => $id,
                             ]),
                             'TEXT' => $error->getMessage(),

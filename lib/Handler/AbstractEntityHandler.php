@@ -4,25 +4,30 @@ namespace Bendersay\Entityadmin\Handler;
 
 use Bendersay\Entityadmin\EntityEditManager;
 use Bendersay\Entityadmin\EntityListManager;
+use Bendersay\Entityadmin\Enum\AccessLevelEnum;
 use Bendersay\Entityadmin\Enum\CodeExceptionEnum;
-use Bendersay\Entityadmin\Install\Config;
+use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bitrix\Main\Application;
+use Bitrix\Main\ArgumentException;
 use Bitrix\Main\Data\LocalStorage\SessionLocalStorage;
 use Bitrix\Main\HttpRequest;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\ObjectException;
+use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\ArrayField;
 use Bitrix\Main\ORM\Fields\BooleanField;
 use Bitrix\Main\ORM\Fields\DatetimeField;
 use Bitrix\Main\ORM\Fields\ScalarField;
+use Bitrix\Main\Security\SecurityException;
+use Bitrix\Main\SystemException;
 use Bitrix\Main\Type\DateTime;
 
 class AbstractEntityHandler
 {
     /** @var array Имена GET параметров, которые нужно удалить из урла */
-    protected const array GET_DELETE_PARAM_NAME = ['delete', 'id', 'sessid'];
+    protected const array GET_DELETE_PARAM_NAME = ['delete', 'id'];
 
     /** @var EntityListManager|EntityEditManager Менеджер для работы со списком элементов в компоненте main.ui.grid или для работы с деталкой */
     protected EntityListManager|EntityEditManager $manager;
@@ -51,18 +56,32 @@ class AbstractEntityHandler
      */
     protected SessionLocalStorage $localSession;
 
+    /**
+     * @param EntityListManager|EntityEditManager $manager
+     *
+     * @throws ArgumentException
+     * @throws ObjectPropertyException
+     * @throws SystemException
+     */
     public function __construct(EntityListManager|EntityEditManager $manager)
     {
         $this->manager = $manager;
         $this->request = $this->manager->getRequest();
         $this->entityClass = $this->manager->getEntityClass();
         $this->primaryFieldList = $this->entityClass::getEntity()->getPrimaryArray();
-        $this->modRight = \CMain::GetGroupRight(Config::MODULE_CODE);
+        $this->modRight = EntityHelper::getGroupRight($this->entityClass);
         $this->localSession = Application::getInstance()->getLocalSession(self::class);
 
         if (!check_bitrix_sessid()) {
             $this->errorList[CodeExceptionEnum::ACCESS_DENIED->name] = CodeExceptionEnum::getMessage(
                 CodeExceptionEnum::ACCESS_DENIED->name
+            );
+        }
+        if ($this->modRight === AccessLevelEnum::DENIED->value) {
+            throw new SecurityException(
+                CodeExceptionEnum::getMessage(
+                    CodeExceptionEnum::ACCESS_DENIED->name
+                )
             );
         }
     }
@@ -82,10 +101,10 @@ class AbstractEntityHandler
             return false;
         }
 
-        if ($this->modRight < 'W') {
+        if ($this->modRight < AccessLevelEnum::WRITE->value) {
             if ($this->request->isAjaxRequest()) {
                 $applyFilter = $this->request->get('apply_filter');
-                if ($applyFilter === 'Y' && $this->modRight !== 'D') {
+                if ($applyFilter === 'Y' && $this->modRight !== AccessLevelEnum::DENIED->value) {
                     return true;
                 }
                 $this->errorList[] = [

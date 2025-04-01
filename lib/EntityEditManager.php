@@ -2,6 +2,7 @@
 
 namespace Bendersay\Entityadmin;
 
+use Bendersay\Entityadmin\Enum\AccessLevelEnum;
 use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Widget\CheckboxWidget;
 use Bendersay\Entityadmin\Widget\DateTimeWidget;
@@ -116,7 +117,7 @@ class EntityEditManager extends AbstractEntityManager
             'ICON' => 'btn_list',
         ];
 
-        if ($this->modRight === 'W') {
+        if ($this->modRight === AccessLevelEnum::WRITE->value) {
             $result[] = [
                 'TEXT' => Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_BUTTON_TEXT'),
                 'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_BUTTON_TITLE'),
@@ -140,7 +141,7 @@ class EntityEditManager extends AbstractEntityManager
     public function getTabControlButtonList(): array
     {
         return [
-            'disabled' => $this->modRight !== 'W',
+            'disabled' => $this->modRight !== AccessLevelEnum::WRITE->value,
             'back_url' => EntityHelper::getListUrl([
                 'entity' => $this->entityClass,
             ]),
@@ -265,7 +266,7 @@ class EntityEditManager extends AbstractEntityManager
             }
 
             $showBasicEditField = ($primary && !$this->actionAdd)
-                || $autocomplete || $expressionField || $this->modRight !== 'W';
+                || $autocomplete || $expressionField || $this->modRight !== AccessLevelEnum::WRITE->value;
 
             $widget->setEntityName($this->entityClass);
             $widget->setCode($code);

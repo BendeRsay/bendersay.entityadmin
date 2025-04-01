@@ -2,6 +2,7 @@
 
 namespace Bendersay\Entityadmin;
 
+use Bendersay\Entityadmin\Enum\AccessLevelEnum;
 use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Helper\FieldHelper;
 use Bitrix\Main\ArgumentException;
@@ -224,7 +225,7 @@ class EntityListManager extends AbstractEntityManager
      */
     public function getActionPanel(): array
     {
-        if ($this->modRight !== 'W') {
+        if ($this->modRight !== AccessLevelEnum::WRITE->value) {
             return [];
         }
 
@@ -312,7 +313,7 @@ class EntityListManager extends AbstractEntityManager
      */
     public function showRowCheckbox(): bool
     {
-        return !($this->modRight !== 'W');
+        return !($this->modRight !== AccessLevelEnum::WRITE->value);
     }
 
     /**
@@ -375,13 +376,13 @@ class EntityListManager extends AbstractEntityManager
      */
     protected function getActionList(array $elem): array
     {
-        if ($this->modRight !== 'W') {
+        if ($this->modRight === AccessLevelEnum::DENIED->value) {
             return [];
         }
 
         $entity = $this->entityClass::getEntity();
 
-        return [
+        $result = [
             [
                 'text' => Loc::getMessage('BENDERSAY_ENTITYADMIN_VIEW_ELEMENT_ACTION_TEXT'),
                 'default' => true,
@@ -394,7 +395,10 @@ class EntityListManager extends AbstractEntityManager
                     )
                     . '"',
             ],
-            [
+        ];
+
+        if ($this->modRight === AccessLevelEnum::WRITE->value) {
+            $result[] = [
                 'text' => Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_ELEMENT_ACTION_TEXT'),
                 'default' => true,
                 'onclick' => 'if(confirm("'
@@ -408,8 +412,10 @@ class EntityListManager extends AbstractEntityManager
                         ]
                     )
                     . '"}',
-            ],
-        ];
+            ];
+        }
+
+        return $result;
     }
 
     /**
@@ -437,7 +443,7 @@ class EntityListManager extends AbstractEntityManager
         if (!empty($valueRef)) {
             $rowList[$elemKey]['columns'][$field->getName()] = '[' . $value . '] ' . $valueRef;
 
-            if ($this->modRight === 'W') {
+            if ($this->modRight === AccessLevelEnum::WRITE->value) {
                 $entityRef = $this->fieldReferenceList[$field->getName()]->entity;
                 $primaryRef = $this->fieldReferenceList[$field->getName()]->primaryArray;
 

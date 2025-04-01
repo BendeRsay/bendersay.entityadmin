@@ -1,28 +1,34 @@
 <?php
 
+use Bendersay\Entityadmin\Entity\EntityNameSpaceTable;
+use Bendersay\Entityadmin\Enum\AccessLevelEnum;
 use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Install\Config;
-use Bitrix\Main\Config\Option;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 
 global $APPLICATION;
 
-if (!Loader::includeModule(Config::MODULE_CODE)
-    || $APPLICATION->GetGroupRight(Config::MODULE_CODE) === 'D') {
+$moduleId = 'bendersay.entityadmin';
+
+if (!Loader::includeModule($moduleId)
+    || $APPLICATION->GetGroupRight($moduleId) === AccessLevelEnum::DENIED->value) {
     return;
 }
 
 Loc::loadMessages(__FILE__);
 
-$entityClassList = unserialize(Option::get(Config::MODULE_CODE, 'entityList'));
+$entityClassList = array_column(EntityNameSpaceTable::getList()->fetchAll(), 'namespace');
 $entityList = [];
 
 foreach ($entityClassList as $entityClass) {
     if (EntityHelper::checkEntityExistence($entityClass)) {
         /** @var DataManager $entityClass */
         $fields = $entityClass::getMap();
+        if (EntityHelper::getGroupRight($entityClass) === AccessLevelEnum::DENIED->value) {
+            continue;
+        }
         $entityList[] = [
             'title' => EntityHelper::getEntityTitle($entityClass),
             'name' => $entityClass,

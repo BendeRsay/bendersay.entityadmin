@@ -1,8 +1,10 @@
 <?php
 
 use Bendersay\Entityadmin\EntityListManager;
+use Bendersay\Entityadmin\Enum\AccessLevelEnum;
 use Bendersay\Entityadmin\Handler\EntityListHandler;
 use Bendersay\Entityadmin\Helper\EntityHelper;
+use Bendersay\Entityadmin\Install\Config;
 use Bitrix\Main\Application;
 use Bitrix\Main\Diag\ExceptionHandlerLog;
 use Bitrix\Main\Localization\Loc;
@@ -57,22 +59,26 @@ try {
             ); ?>
         </div>
         <?php
-        if ($entityListManager->getModRight() === 'W') {
-            (new CAdminUiContextMenu([
-                [
-                    'TEXT' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT'),
-                    'LINK' => EntityHelper::getEditUrl(
-                        [
-                            'entity' => $entityListManager->getEntityClass(),
-                            'add' => 'Y',
-                        ]
-                    ),
-                    'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT'),
-                    'ICON' => 'btn_new',
-                ],
-            ]))->Show();
+        if ($entityListManager->getModRight() === AccessLevelEnum::WRITE->value) { ?>
+            <a href="<?= EntityHelper::getEditUrl([
+                'entity' => $entityListManager->getEntityClass(),
+                'add' => 'Y',
+            ]) ?>">
+                <button class="ui-btn ui-btn-primary ui-btn-icon-add">
+                    <?= Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT') ?>
+                </button>
+            </a>
+            <?php
         }
-        ?>
+        if (\CMain::GetGroupRight(Config::MODULE_CODE) === AccessLevelEnum::WRITE->value) { ?>
+            <a href="/bitrix/admin/settings.php?lang=<?= LANGUAGE_ID ?>'&mid=bendersay.entityadmin">
+                <button class="ui-btn ui-btn-icon-setting ui-btn-link">
+                    <?= Loc::getMessage('BENDERSAY_ENTITYADMIN_MODULE_SETTING_ACTION_TEXT') ?>
+                </button>
+            </a>
+            <?php
+        } ?>
+
     </div>
 
     <?php

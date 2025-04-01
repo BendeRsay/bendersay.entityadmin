@@ -1,5 +1,7 @@
 <?php
 
+use Bendersay\Entityadmin\Entity\EntityNameSpaceTable;
+use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Install\Config;
 use Bendersay\Entityadmin\Install\Dependence;
 use Bendersay\Entityadmin\Install\ManagerEvent;
@@ -14,7 +16,9 @@ use Bitrix\Main\LoaderException;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ModuleManager;
 use Bitrix\Main\ObjectPropertyException;
+use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\SystemException;
+use Bendersay\Entityadmin\Entity\EntityNameSpaceGroupTable;
 
 require_once __DIR__ . '/../lib/Install/Config.php';
 
@@ -23,6 +27,12 @@ require_once __DIR__ . '/../lib/Install/Config.php';
  */
 class bendersay_entityadmin extends CModule
 {
+    /** @var array|string[] Сущности модуля */
+    private const array ENTITY_LIST = [
+        EntityNameSpaceTable::class,
+        EntityNameSpaceGroupTable::class,
+    ];
+
     public function __construct()
     {
         $this->MODULE_ID = Config::MODULE_CODE;
@@ -155,6 +165,8 @@ class bendersay_entityadmin extends CModule
         $event = new ManagerEvent();
         $event->unRegisterEvents();
 
+        $this->removeEntityTable();
+
         Option::delete($this->MODULE_ID);
 
         return true;
@@ -171,6 +183,8 @@ class bendersay_entityadmin extends CModule
         $event = new ManagerEvent();
         $event->registerEvents();
 
+        $this->createEntityTable();
+
         return true;
     }
 
@@ -186,5 +200,47 @@ class bendersay_entityadmin extends CModule
 
         $this->MODULE_VERSION = $arModuleVersion['VERSION'];
         $this->MODULE_VERSION_DATE = $arModuleVersion['VERSION_DATE'];
+    }
+
+    /**
+     * Создаем таблицы сущностей
+     *
+     * @return void
+     * @throws ArgumentException
+     * @throws SystemException
+     */
+    private function createEntityTable(): void
+    {
+        foreach (self::ENTITY_LIST as $entityNameSpace) {
+            if (!EntityHelper::checkEntityExistence($entityNameSpace)) {
+                throw new SystemException('error remove entity');
+            }
+            /** @var $entityNameSpace DataManager */
+            $tableName = $entityNameSpace::getTableName();
+            if (!Application::getConnection()->isTableExists($tableName)) {
+                $entityNameSpace::getEntity()->createDbTable();
+            }
+        }
+    }
+
+    /**
+     * Удаляем таблицы сущностей
+     *
+     * @return void
+     * @throws SqlQueryException
+     * @throws SystemException
+     */
+    private function removeEntityTable(): void
+    {
+        foreach (self::ENTITY_LIST as $entityNameSpace) {
+            if (!EntityHelper::checkEntityExistence($entityNameSpace)) {
+                throw new SystemException('error remove entity');
+            }
+            /** @var $entityNameSpace DataManager */
+            $tableName = $entityNameSpace::getTableName();
+            if (Application::getConnection()->isTableExists($tableName)) {
+                Application::getConnection()->dropTable($tableName);
+            }
+        }
     }
 }
