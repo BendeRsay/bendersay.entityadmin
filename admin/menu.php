@@ -60,6 +60,10 @@ foreach ($entityList as $entity) {
     ];
 }
 
+if (empty($items)) {
+    return [];
+}
+
 return [
     [
         'parent_menu' => 'global_menu_content',

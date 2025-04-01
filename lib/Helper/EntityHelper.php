@@ -147,10 +147,7 @@ class EntityHelper
         if (empty($accessEntityNameSpaceGroup)) {
             return $access;
         }
-        $accessList = array_merge(
-            [$access],
-            array_column($accessEntityNameSpaceGroup, 'accessLevelEnum', 'accessLevelEnum')
-        );
+        $accessList = array_column($accessEntityNameSpaceGroup, 'accessLevelEnum', 'accessLevelEnum');
 
         return max($accessList);
     }
