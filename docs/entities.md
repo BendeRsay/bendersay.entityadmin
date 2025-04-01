@@ -44,6 +44,5 @@ ____
 
 
 - [Документация](./instruction.md)
-- [Аннотации](./annotations.md)
 - [Датаменеджеры](./datamanager.md)
 - [README.md](../README.md)

@@ -6,6 +6,13 @@
 [![For PHP >=8.3](https://img.shields.io/badge/PHP-%3E%3D_8.3-orange.svg?style=flat-square)](https://www.php.net/)
 [![For Bitrix >=23.900.0](https://img.shields.io/badge/bitrix-%3E%3D_23.900.0-orange.svg?style=flat-square)](https://dev.1c-bitrix.ru/docs/versions.php)
 
+В отличие от инструмента "Настройки -> Производительность -> Таблицы" данный модуль учитывает
+события все события при работе с элементами сущности.
+
+Так же модуль позволяет настроить права доступа к каждой сущности на запись-удаление/чтение/запрещен.
+Подробнее [Документация](docs/settings.md)
+
+
 ## Самая простая установка 
 
 Скачать архив и распаковать архив в `/local`

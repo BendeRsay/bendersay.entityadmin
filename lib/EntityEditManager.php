@@ -117,7 +117,7 @@ class EntityEditManager extends AbstractEntityManager
             'ICON' => 'btn_list',
         ];
 
-        if ($this->modRight === AccessLevelEnum::WRITE->value) {
+        if ($this->modRight === AccessLevelEnum::WRITE->value && !$this->actionAdd) {
             $result[] = [
                 'TEXT' => Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_BUTTON_TEXT'),
                 'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_DELETE_BUTTON_TITLE'),
