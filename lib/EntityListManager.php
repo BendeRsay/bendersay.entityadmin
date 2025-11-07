@@ -487,7 +487,7 @@ class EntityListManager extends AbstractEntityManager
             $currentPageInt = $currentPage === 'page-all' ? 1 : (int)preg_replace('/\D/', '', $currentPage);
             $this->localSession->set('currentPage', $currentPageInt);
         } elseif ((new ExcelExporter())->isExportRequest()) {
-            $currentPageInt = $this->localSession->get('currentPage');
+            $currentPageInt = $this->localSession->get('currentPage') ?? 1;
         } else {
             $this->localSession->clear();
         }
