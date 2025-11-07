@@ -4,8 +4,12 @@ namespace Bendersay\Entityadmin\Handler;
 
 use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bitrix\Main\Application;
+use Bitrix\Main\ArgumentException;
 use Bitrix\Main\Diag\ExceptionHandlerLog;
 use Bitrix\Main\Engine\Response\Json;
+use Bitrix\Main\Grid\Export\ExcelExporter;
+use Bitrix\Main\Grid\Grid;
+use Bitrix\Main\Grid\Settings;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\NotSupportedException;
 use Bitrix\Main\ORM\Fields\ScalarField;
@@ -25,23 +29,23 @@ class EntityListHandler extends AbstractEntityHandler
      */
     public function processGet(): self
     {
-        $id = $this->request->get('id');
-        if (empty($id) || $this->request->get('delete') === null) {
-            return $this;
-        }
-
-        if (!check_bitrix_sessid()) {
-            $this->errorList[] = 'access denied';
-
-            return $this;
-        }
+        $idDelete = $this->request->get('id');
+        $excelExporter = new ExcelExporter();
 
         try {
-            $result = $this->entityClass::delete($this->preparedId($id));
-            if (!$result->isSuccess()) {
-                $this->errorList = $result->getErrorMessages();
-            } else {
-                LocalRedirect(EntityHelper::getListUrl(['entity' => $this->entityClass]));
+            // удаление элемента
+            if (!empty($idDelete) || $this->request->get('delete') === 'Y') {
+                $result = $this->entityClass::delete($this->preparedId($idDelete));
+                if (!$result->isSuccess()) {
+                    $this->errorList = $result->getErrorMessages();
+                } else {
+                    LocalRedirect(EntityHelper::getListUrl(['entity' => $this->entityClass]));
+                }
+            }
+
+            // экспорт Excel
+            if ($excelExporter->isExportRequest()) {
+                $excelExporter->process($this->getDinamicClass());
             }
         } catch (\Exception $e) {
             Application::getInstance()->getExceptionHandler()->writeToLog(
@@ -230,5 +234,40 @@ class EntityListHandler extends AbstractEntityHandler
         parse_str($id, $idList);
 
         return $idList;
+    }
+
+    /**
+     * Создаем динамический класс грида для выгрузки в Excel
+     *
+     * @return Grid
+     *
+     * @throws ArgumentException
+     * @throws \Bitrix\Main\ObjectPropertyException
+     * @throws \Bitrix\Main\SystemException
+     */
+    protected function getDinamicClass(): Grid
+    {
+        $settings = new Settings([
+            'ID' => $this->manager->getGridId(),
+        ]);
+        $shortClassName = basename(str_replace('\\', '/', $this->entityClass));
+        $classGrid = $shortClassName . 'Grid';
+
+        $classDefinition = '
+            final class ' . $classGrid . ' extends \Bitrix\Main\Grid\TabletGrid {
+                protected function getTabletClass(): string
+	            {
+    	            return ' . $this->entityClass . '::class;
+	            }
+            }
+        ';
+
+        eval($classDefinition);
+
+        $objectGrid = new $classGrid($settings);
+        /* @var $objectGrid Grid */
+        $objectGrid->setRawRows($this->manager->getElementList());
+
+        return $objectGrid;
     }
 }

@@ -76,6 +76,7 @@ class AbstractEntityHandler
             $this->errorList[CodeExceptionEnum::ACCESS_DENIED->name] = CodeExceptionEnum::getMessage(
                 CodeExceptionEnum::ACCESS_DENIED->name
             );
+            $this->localSession->set('error', implode("\n", $this->errorList));
         }
         if ($this->modRight === AccessLevelEnum::DENIED->value) {
             throw new SecurityException(

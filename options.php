@@ -67,17 +67,17 @@ $formActionUrl = $APPLICATION->GetCurPage() . '?' . http_build_query($urlParams)
 <form method="post" action="<?= $formActionUrl ?>">
     <?php
     echo bitrix_sessid_post();
-    $tabControl->Begin();
+$tabControl->Begin();
 
-    foreach ($aTabs as $tab) {
-        $tabControl->BeginNextTab();
+foreach ($aTabs as $tab) {
+    $tabControl->BeginNextTab();
 
-        if ($tab['DIV'] === 'tab_permission') {
-            // Доступ к модулю
-            require_once(Loader::getDocumentRoot() . '/bitrix/modules/main/admin/group_rights.php');
+    if ($tab['DIV'] === 'tab_permission') {
+        // Доступ к модулю
+        require_once(Loader::getDocumentRoot() . '/bitrix/modules/main/admin/group_rights.php');
 
-            continue;
-        } ?>
+        continue;
+    } ?>
         <tr>
             <td class="adm-detail-valign-top">
                 <p>
@@ -96,22 +96,22 @@ $formActionUrl = $APPLICATION->GetCurPage() . '?' . http_build_query($urlParams)
         <?php
 
         $tabControl->EndTab();
-    }
+}
 
-    $tabControl->Buttons();
-    ?>
+$tabControl->Buttons();
+?>
     <input type="submit"
            name="Update"<?php
-    echo ($modRight < AccessLevelEnum::WRITE->value) ? ' disabled' : null ?>
+echo ($modRight < AccessLevelEnum::WRITE->value) ? ' disabled' : null ?>
            value="<?php
-           echo Loc::getMessage('MAIN_SAVE') ?>"
+       echo Loc::getMessage('MAIN_SAVE') ?>"
            class="adm-btn-save">
     <input type="reset"
            name="reset"
            value="<?php
-           echo Loc::getMessage('MAIN_RESET') ?>">
+       echo Loc::getMessage('MAIN_RESET') ?>">
     <?php
-    echo bitrix_sessid_post();
-    $tabControl->End();
-    ?>
+echo bitrix_sessid_post();
+$tabControl->End();
+?>
 </form>

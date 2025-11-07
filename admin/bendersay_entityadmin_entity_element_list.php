@@ -7,7 +7,10 @@ use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Install\Config;
 use Bitrix\Main\Application;
 use Bitrix\Main\Diag\ExceptionHandlerLog;
+use Bitrix\Main\Grid\Export\ExcelExporter;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\UI\Buttons\BaseButton;
+use Bitrix\UI\Buttons\Tag;
 
 require_once($_SERVER['DOCUMENT_ROOT'] . '/bitrix/modules/main/include/prolog_admin_before.php');
 
@@ -21,11 +24,11 @@ try {
     if ($handler->isError()) {
         require_once(Application::getDocumentRoot() . '/bitrix/modules/main/include/prolog_admin_after.php');
         CAdminMessage::ShowMessage(
-            [
-                'MESSAGE' => $handler->getError(),
-                'HTML' => true,
-                'TYPE' => 'ERROR',
-            ]
+                [
+                        'MESSAGE' => $handler->getError(),
+                        'HTML' => true,
+                        'TYPE' => 'ERROR',
+                ]
         );
     }
 
@@ -33,10 +36,10 @@ try {
 
     global $APPLICATION;
     $APPLICATION->SetTitle(
-        Loc::getMessage(
-            'BENDERSAY_ENTITYADMIN_LIST_TITLE',
-            ['%title%' => EntityHelper::getEntityTitle($entityListManager->getEntityClass())]
-        )
+            Loc::getMessage(
+                    'BENDERSAY_ENTITYADMIN_LIST_TITLE',
+                    ['%title%' => EntityHelper::getEntityTitle($entityListManager->getEntityClass())]
+            )
     );
 
     require_once(Application::getDocumentRoot() . '/bitrix/modules/main/include/prolog_admin_after.php');
@@ -46,82 +49,100 @@ try {
         <div class="adm-toolbar-panel-flexible-space">
             <?php
             $APPLICATION->IncludeComponent(
-                'bitrix:main.ui.filter',
-                '',
-                [
-                    'FILTER_ID' => $entityListManager->getFilterGridId(),
-                    'GRID_ID' => $entityListManager->getGridId(),
-                    'FILTER' => $entityListManager->getUiFilter(),
-                    'ENABLE_LABEL' => true,
-                    'ENABLE_LIVE_SEARCH' => true,
-                    'DISABLE_SEARCH' => false,
-                ]
+                    'bitrix:main.ui.filter',
+                    '',
+                    [
+                            'FILTER_ID' => $entityListManager->getFilterGridId(),
+                            'GRID_ID' => $entityListManager->getGridId(),
+                            'FILTER' => $entityListManager->getUiFilter(),
+                            'ENABLE_LABEL' => true,
+                            'ENABLE_LIVE_SEARCH' => true,
+                            'DISABLE_SEARCH' => false,
+                    ]
             ); ?>
         </div>
         <?php
-        if ($entityListManager->getModRight() === AccessLevelEnum::WRITE->value) { ?>
-            <a href="<?= EntityHelper::getEditUrl([
-                'entity' => $entityListManager->getEntityClass(),
-                'add' => 'Y',
-            ]) ?>">
-                <button class="ui-btn ui-btn-primary ui-btn-icon-add">
-                    <?= Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT') ?>
-                </button>
-            </a>
-            <?php
+        // Кнопка добавить элемент
+        if ($entityListManager->getModRight() === AccessLevelEnum::WRITE->value) {
+            $buttonAdd = new BaseButton();
+            $buttonAdd->setLink(EntityHelper::getEditUrl([
+                    'entity' => $entityListManager->getEntityClass(),
+                    'add' => 'Y',
+            ]))
+                    ->setText(Loc::getMessage('BENDERSAY_ENTITYADMIN_ADD_CONTEXT_ACTION_TEXT'))
+                    ->addClass('ui-btn-primary')
+                    ->addClass('ui-btn-icon-add');
+            echo $buttonAdd->render();
         }
-        if (\CMain::GetGroupRight(Config::MODULE_CODE) === AccessLevelEnum::WRITE->value) { ?>
-            <a href="/bitrix/admin/settings.php?lang=<?= LANGUAGE_ID ?>'&mid=bendersay.entityadmin">
-                <button class="ui-btn ui-btn-icon-setting ui-btn-link">
-                    <?= Loc::getMessage('BENDERSAY_ENTITYADMIN_MODULE_SETTING_ACTION_TEXT') ?>
-                </button>
-            </a>
-            <?php
-        } ?>
+
+        // Кнопка выгрузки в Excel
+        $buttonExcel = (new ExcelExporter())->getControl();
+        $buttonExcel->setTag(Tag::LINK)
+                ->addClass('ui-btn-secondary')
+                ->addClass('ui-btn-icon-download');
+        echo $buttonExcel->render();
+
+        // Кнопка настроек модуля
+        if (\CMain::GetGroupRight(Config::MODULE_CODE) === AccessLevelEnum::WRITE->value) {
+            $buttonSetting = new BaseButton();
+            $buttonSetting->setLink(
+                    '/bitrix/admin/settings.php?lang=' . LANGUAGE_ID . '&mid=bendersay.entityadmin&mid_menu=1'
+            )
+                    ->setText(Loc::getMessage('BENDERSAY_ENTITYADMIN_MODULE_SETTING_ACTION_TEXT'))
+                    ->addClass('ui-btn-icon-setting')
+                    ->addClass('ui-btn-link');
+            echo $buttonSetting->render();
+        }
+        ?>
 
     </div>
 
     <?php
     $APPLICATION->IncludeComponent(
-        'bitrix:main.ui.grid',
-        '',
-        [
-            'GRID_ID' => $entityListManager->getGridId(),
-            'COLUMNS' => $entityListManager->getColumnList(),
-            'ROWS' => $entityListManager->getRowList(),
-            'TOTAL_ROWS_COUNT' => $entityListManager->getTotalRowsCount(),
-            'SHOW_ROW_CHECKBOXES' => $entityListManager->showRowCheckbox(),
-            'NAV_OBJECT' => $entityListManager->getPageNavigation(),
-            'AJAX_MODE' => 'Y',
-            'AJAX_ID' => \CAjax::getComponentID('bitrix:main.ui.grid', '.default', ''),
-            'PAGE_SIZES' => [
-                ['NAME' => EntityListManager::DEFAULT_PAGE_SIZE, 'VALUE' => EntityListManager::DEFAULT_PAGE_SIZE],
-                ['NAME' => 50, 'VALUE' => 50],
-                ['NAME' => 100, 'VALUE' => 100],
-                ['NAME' => 200, 'VALUE' => 200],
-                ['NAME' => 500, 'VALUE' => 500],
-            ],
-            'AJAX_OPTION_JUMP' => 'N',
-            'SHOW_CHECK_ALL_CHECKBOXES' => true,
-            'SHOW_ROW_ACTIONS_MENU' => true,
-            'SHOW_GRID_SETTINGS_MENU' => true,
-            'SHOW_NAVIGATION_PANEL' => true,
-            'SHOW_PAGINATION' => true,
-            'SHOW_SELECTED_COUNTER' => true,
-            'SHOW_TOTAL_COUNTER' => true,
-            'SHOW_PAGESIZE' => true,
-            'SHOW_ACTION_PANEL' => true,
-            'ACTION_PANEL' => $entityListManager->getActionPanel(),
-            'ALLOW_COLUMNS_SORT' => true,
-            'ALLOW_COLUMNS_RESIZE' => true,
-            'ALLOW_HORIZONTAL_SCROLL' => true,
-            'ALLOW_SORT' => true,
-            'SORT' => $entityListManager->getSort()['sort'],
-            'SORT_VARS' => $entityListManager->getSort()['vars'],
-            'ALLOW_PIN_HEADER' => true,
-            'AJAX_OPTION_HISTORY' => 'N',
-            'HANDLE_RESPONSE_ERRORS' => true,
-        ]
+            'bitrix:main.ui.grid',
+            '',
+            [
+                    'GRID_ID' => $entityListManager->getGridId(),
+                    'COLUMNS' => $entityListManager->getColumnList(),
+                    'ROWS' => $entityListManager->getRowList(),
+                    'TOTAL_ROWS_COUNT' => $entityListManager->getTotalRowsCount(),
+                    'SHOW_ROW_CHECKBOXES' => $entityListManager->showRowCheckbox(),
+                    'NAV_OBJECT' => $entityListManager->getPageNavigation(),
+                    'AJAX_MODE' => 'Y',
+                    'AJAX_ID' => \CAjax::getComponentID('bitrix:main.ui.grid', '.default', ''),
+                    'PAGE_SIZES' => [
+                            [
+                                    'NAME' => EntityListManager::DEFAULT_PAGE_SIZE,
+                                    'VALUE' => EntityListManager::DEFAULT_PAGE_SIZE
+                            ],
+                            ['NAME' => 50, 'VALUE' => 50],
+                            ['NAME' => 100, 'VALUE' => 100],
+                            ['NAME' => 200, 'VALUE' => 200],
+                            ['NAME' => 500, 'VALUE' => 500],
+                            ['NAME' => 1000, 'VALUE' => 1000],
+                    ],
+                    'DEFAULT_PAGE_SIZE' => EntityListManager::DEFAULT_PAGE_SIZE,
+                    'AJAX_OPTION_JUMP' => 'N',
+                    'SHOW_CHECK_ALL_CHECKBOXES' => true,
+                    'SHOW_ROW_ACTIONS_MENU' => true,
+                    'SHOW_GRID_SETTINGS_MENU' => true,
+                    'SHOW_NAVIGATION_PANEL' => true,
+                    'SHOW_PAGINATION' => true,
+                    'SHOW_SELECTED_COUNTER' => true,
+                    'SHOW_TOTAL_COUNTER' => true,
+                    'SHOW_PAGESIZE' => true,
+                    'SHOW_ACTION_PANEL' => true,
+                    'ACTION_PANEL' => $entityListManager->getActionPanel(),
+                    'ALLOW_COLUMNS_SORT' => true,
+                    'ALLOW_COLUMNS_RESIZE' => true,
+                    'ALLOW_HORIZONTAL_SCROLL' => true,
+                    'ALLOW_SORT' => true,
+                    'SORT' => $entityListManager->getSort()['sort'],
+                    'SORT_VARS' => $entityListManager->getSort()['vars'],
+                    'ALLOW_PIN_HEADER' => true,
+                    'AJAX_OPTION_HISTORY' => 'N',
+                    'HANDLE_RESPONSE_ERRORS' => true,
+            ]
     );
 
     require(Application::getDocumentRoot() . '/bitrix/modules/main/include/epilog_admin.php');
@@ -129,11 +150,11 @@ try {
     require_once(Application::getDocumentRoot() . '/bitrix/modules/main/include/prolog_admin_after.php');
     Application::getInstance()->getExceptionHandler()->writeToLog($e, ExceptionHandlerLog::CAUGHT_EXCEPTION);
     CAdminMessage::ShowMessage(
-        [
-            'MESSAGE' => $e->getMessage(),
-            'HTML' => true,
-            'TYPE' => 'ERROR',
-        ]
+            [
+                    'MESSAGE' => $e->getMessage(),
+                    'HTML' => true,
+                    'TYPE' => 'ERROR',
+            ]
     );
     require_once(Application::getDocumentRoot() . '/bitrix/modules/main/include/epilog_admin.php');
 }

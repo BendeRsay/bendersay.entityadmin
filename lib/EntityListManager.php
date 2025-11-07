@@ -6,6 +6,7 @@ use Bendersay\Entityadmin\Enum\AccessLevelEnum;
 use Bendersay\Entityadmin\Helper\EntityHelper;
 use Bendersay\Entityadmin\Helper\FieldHelper;
 use Bitrix\Main\ArgumentException;
+use Bitrix\Main\Grid\Export\ExcelExporter;
 use Bitrix\Main\Grid\Options;
 use Bitrix\Main\Grid\Panel\Snippet;
 use Bitrix\Main\LoaderException;
@@ -54,7 +55,11 @@ class EntityListManager extends AbstractEntityManager
         parent::__construct();
 
         $this->gridOption = new Options($this->getGridId());
-        $this->gridOption->setPageSize(self::DEFAULT_PAGE_SIZE);
+        $pageSize = (int)$this->gridOption->getCurrentOptions()['page_size'];
+        if ($pageSize === 0) {
+            $pageSize = self::DEFAULT_PAGE_SIZE;
+        }
+        $this->gridOption->setPageSize($pageSize);
         $this->gridOption->save();
 
         $this->pageNavigation = new PageNavigation($this->getGridId());
@@ -64,6 +69,7 @@ class EntityListManager extends AbstractEntityManager
                     'nPageSize' => self::DEFAULT_PAGE_SIZE,
                 ])['nPageSize']
             )
+            ->setCurrentPage($this->getCurrentPage())
             ->initFromUri();
 
         $reflectionClass = new \ReflectionClass($this->entityClass);
@@ -348,7 +354,7 @@ class EntityListManager extends AbstractEntityManager
      * @throws SystemException
      * @throws ArgumentException
      */
-    protected function getElementList(): array
+    public function getElementList(): array
     {
         $this->queryResult = $this->entityClass::getList([
             'select' => $this->gridOption->getUsedColumns() ?: $this->getSelectDefault(),
@@ -465,6 +471,28 @@ class EntityListManager extends AbstractEntityManager
         if ($field instanceof DatetimeField && !empty($value)) {
             $rowList[$elemKey]['data'][$field->getName()] = $value->toString();
         }
+    }
+
+    /**
+     * Получаем текущую страницу
+     *
+     * @return int
+     */
+    protected function getCurrentPage(): int
+    {
+        $currentPageInt = 1;
+        $currentPage = $this->request->get($this->getGridId());
+
+        if (!empty($currentPage)) {
+            $currentPageInt = $currentPage === 'page-all' ? 1 : (int)preg_replace('/\D/', '', $currentPage);
+            $this->localSession->set('currentPage', $currentPageInt);
+        } elseif ((new ExcelExporter())->isExportRequest()) {
+            $currentPageInt = $this->localSession->get('currentPage');
+        } else {
+            $this->localSession->clear();
+        }
+
+        return $currentPageInt;
     }
 
 }
