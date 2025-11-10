@@ -1,5 +1,5 @@
-# bendersay: Администрирование сущностей d7
-Модуль предназначен для работы с сущностями d7 в административной части сайта
+# bendersay: Администрирование orm сущностей bitrix
+Администрирование сущностей bitrix d7 orm table в административной части сайта с учетом событий
 
 [![Packagist](https://img.shields.io/badge/package-bendersay/bendersay.entityadmin-blue.svg?style=flat-square)](https://packagist.org/packages/bendersay/bendersay.entityadmin)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)

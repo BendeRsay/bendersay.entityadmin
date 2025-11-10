@@ -1,12 +1,15 @@
 {
   "name": "bendersay/bendersay.entityadmin",
-  "description": "Bitrix entity administration module",
+  "description": "Администрирование сущностей d7 bitrix orm table в административной части сайта с учетом событий",
   "type": "bitrix-d7-module",
   "homepage": "https://dev.1c-bitrix.ru/learning/resume.php?ID=86674118-114664",
   "keywords": [
     "admin",
     "bitrix",
     "entity",
+    "bitrix-d7-module",
+    "bitrix-orm",
+    "bitrix-cms",
     "bendersay"
   ],
   "authors": [
