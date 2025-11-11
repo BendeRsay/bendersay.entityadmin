@@ -444,6 +444,11 @@ class EntityListManager extends AbstractEntityManager
             $rowList[$elemKey]['id'][$field->getName()] = $value;
         }
         $rowList[$elemKey]['data'][$field->getName()] = $value;
+        if ($value === null) {
+            $rowList[$elemKey]['data'][$field->getName()] = '<i>[NULL]</i>';
+
+            return;
+        }
 
         $valueRef = $this->fieldReferenceList[$field->getName()]->itemList[$value];
         if (!empty($valueRef)) {
