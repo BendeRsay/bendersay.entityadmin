@@ -50,7 +50,7 @@ class EntityEditHandler extends AbstractEntityHandler
 
         if (empty($this->elementPrimary) && !$actionAdd) {
             $this->errorList[] = Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_DELETE_ID_TEXT', [
-                '#primaryCode#' => $this->primaryFieldList,
+                '#primaryCode#' => implode(',', $this->primaryFieldList),
                 '#id#' => $this->elementPrimary,
             ]);
 
@@ -85,7 +85,7 @@ class EntityEditHandler extends AbstractEntityHandler
         $uri = new Uri($this->request->getRequestUri());
 
         if (!empty($this->errorList)) {
-            $this->localSession->set('error', $this->errorList);
+            $this->localSession->set('error', implode("\n", $this->errorList));
             $localSessionEntityEditManager = Application::getInstance()->getLocalSession(EntityEditManager::class);
             $postFieldList = $this->request->getPost('FIELDS');
             $localSessionEntityEditManager->set('postFieldList', $postFieldList);
@@ -103,29 +103,6 @@ class EntityEditHandler extends AbstractEntityHandler
             );
             LocalRedirect($uri->getUri());
         }
-    }
-
-    /**
-     * Есть ли ошибка в кеше?
-     *
-     * @return bool
-     */
-    public function isError(): bool
-    {
-        return (bool)$this->localSession->get('error');
-    }
-
-    /**
-     * Возвращаем ошибки, удаляем из кеша
-     *
-     * @return array
-     */
-    public function getError(): array
-    {
-        $error = $this->localSession->get('error');
-        $this->localSession->clear();
-
-        return $error;
     }
 
     /**

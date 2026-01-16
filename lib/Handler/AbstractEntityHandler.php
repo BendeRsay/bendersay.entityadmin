@@ -88,6 +88,29 @@ class AbstractEntityHandler
     }
 
     /**
+     * Есть ли ошибка в кеше?
+     *
+     * @return bool
+     */
+    public function isError(): bool
+    {
+        return (bool)$this->localSession->get('error');
+    }
+
+    /**
+     * Возвращаем ошибки, удаляем из кеша
+     *
+     * @return string
+     */
+    public function getError(): string
+    {
+        $error = $this->localSession->get('error');
+        $this->localSession->clear();
+
+        return $error;
+    }
+
+    /**
      * Проверка POST запроса
      * Права при POST у модуля должны быть W - запись
      * При запросе из фильтра и правах !== 'D' пропускаем
@@ -148,7 +171,7 @@ class AbstractEntityHandler
             if ($field->isAutocomplete() === true) {
                 unset($elementField[$fieldCode]);
             }
-            if ($field->isNullable() && empty($fieldValue)) {
+            if ($field->isNullable() && (empty($fieldValue) || $fieldValue === '<i>[NULL]</i>')) {
                 $elementField[$fieldCode] = null;
             }
 

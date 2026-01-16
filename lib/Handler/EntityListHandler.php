@@ -107,29 +107,6 @@ class EntityListHandler extends AbstractEntityHandler
     }
 
     /**
-     * Есть ли ошибка в кеше?
-     *
-     * @return bool
-     */
-    public function isError(): bool
-    {
-        return (bool)$this->localSession->get('error');
-    }
-
-    /**
-     * Возвращаем ошибку, удаляем из кеша
-     *
-     * @return string
-     */
-    public function getError(): string
-    {
-        $error = $this->localSession->get('error');
-        $this->localSession->clear();
-
-        return $error;
-    }
-
-    /**
      * Удаляем элементы, через POST
      *
      * @return void
@@ -158,7 +135,7 @@ class EntityListHandler extends AbstractEntityHandler
                 );
                 $this->errorList[] = [
                     'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_DELETE', [
-                        '#primaryCode#' => $this->primaryFieldList,
+                        '#primaryCode#' => implode(',', $this->primaryFieldList),
                         '#id#' => $id,
                     ]),
                     'TEXT' => $e->getMessage(),
@@ -195,7 +172,7 @@ class EntityListHandler extends AbstractEntityHandler
                     foreach ($result->getErrors() as $error) {
                         $this->errorList[] = [
                             'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_EDIT', [
-                                '#primaryCode#' => $this->primaryFieldList,
+                                '#primaryCode#' => implode(',', $this->primaryFieldList),
                                 '#id#' => $id,
                             ]),
                             'TEXT' => $error->getMessage(),
@@ -211,7 +188,7 @@ class EntityListHandler extends AbstractEntityHandler
                 );
                 $this->errorList[] = [
                     'TITLE' => Loc::getMessage('BENDERSAY_ENTITYADMIN_ERROR_TITLE_EDIT', [
-                        '#primaryCode#' => $this->primaryFieldList,
+                        '#primaryCode#' => implode(',', $this->primaryFieldList),
                         '#id#' => $id,
                     ]),
                     'TEXT' => $e->getMessage(),

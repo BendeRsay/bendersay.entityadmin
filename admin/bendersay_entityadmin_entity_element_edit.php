@@ -19,15 +19,11 @@ try {
 
     if ($handler->isError()) {
         require_once(Application::getDocumentRoot() . '/bitrix/modules/main/include/prolog_admin_after.php');
-        foreach ($handler->getError() as $error) {
-            CAdminMessage::ShowMessage(
-                [
-                    'MESSAGE' => is_array($error) ? implode("\n", $error) : $error,
-                    'HTML' => true,
-                    'TYPE' => 'ERROR',
-                ]
-            );
-        }
+        CAdminMessage::ShowMessage([
+                'MESSAGE' => str_replace("\n", '<br>', $handler->getError()),
+                'HTML' => true,
+                'TYPE' => 'ERROR',
+        ]);
     }
 
     $handler->processGet()->processPost()->processFinish();
