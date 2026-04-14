@@ -22,6 +22,7 @@ use Bitrix\Main\ORM\Fields\Field;
 use Bitrix\Main\ORM\Fields\ScalarField;
 use Bitrix\Main\ORM\Query\Result as QueryResult;
 use Bitrix\Main\SystemException;
+use Bitrix\Main\Text\HtmlFilter;
 use Bitrix\Main\UI\PageNavigation;
 
 /**
@@ -433,6 +434,9 @@ class EntityListManager extends AbstractEntityManager
      * @param $value
      *
      * @return void
+     *
+     * @throws ArgumentException
+     * @throws SystemException
      */
     protected function preparedRowFieldScalarExpression(
         &$rowList,
@@ -443,7 +447,7 @@ class EntityListManager extends AbstractEntityManager
         if ($field->isPrimary()) {
             $rowList[$elemKey]['id'][$field->getName()] = $value;
         }
-        $rowList[$elemKey]['data'][$field->getName()] = $value;
+        $rowList[$elemKey]['data'][$field->getName()] = HtmlFilter::encode($value);
         if ($value === null) {
             $rowList[$elemKey]['data'][$field->getName()] = '<i>[NULL]</i>';
 
