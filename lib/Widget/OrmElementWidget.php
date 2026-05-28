@@ -133,8 +133,8 @@ class OrmElementWidget extends NumberWidget
                 foreach ($entityListData as $referenceData) {
                     $elementId = $referenceData['ID'];
                     $elementName = $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
-                        ? $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
-                        : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
+                            ? $referenceData[$this->getSettings('TITLE_FIELD_NAME')]
+                            : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
 
                     ?>
             multiple.addField({
@@ -161,8 +161,8 @@ class OrmElementWidget extends NumberWidget
 
         if (!empty($entityData)) {
             $entityName = $entityData[$this->getSettings('TITLE_FIELD_NAME')]
-                ? $entityData[$this->getSettings('TITLE_FIELD_NAME')]
-                : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
+                    ? $entityData[$this->getSettings('TITLE_FIELD_NAME')]
+                    : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
 
             return '[' . $entityData['ID'] . ']' . static::prepareToOutput($entityName);
         }
@@ -182,8 +182,8 @@ class OrmElementWidget extends NumberWidget
 
             foreach ($entityListData as $entityData) {
                 $entityName = $entityData[$this->getSettings('TITLE_FIELD_NAME')]
-                    ? $entityData[$this->getSettings('TITLE_FIELD_NAME')]
-                    : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
+                        ? $entityData[$this->getSettings('TITLE_FIELD_NAME')]
+                        : Loc::getMessage('IBLOCK_ELEMENT_NOT_FOUND');
 
                 $multipleData[] = '[' . $entityData['ID'] . ']' . static::prepareToOutput($entityName);
             }
@@ -247,7 +247,7 @@ class OrmElementWidget extends NumberWidget
                      value="' . $this->getCurrentFilterValue() . '"
                      size="' . $inputSize . '"
                      type="text">'
-                . '<input type="button"
+                    . '<input type="button"
                     value="..."
                     onClick="jsUtils.OpenWindow(\'' . $popupUrl . '\', ' . $windowWidth . ', ' . $windowHeight . ');">';
 
@@ -302,12 +302,12 @@ class OrmElementWidget extends NumberWidget
                      value="' . $inputValue . '"
                      size="' . $inputSize . '"
                      type="text">'
-            . '<input type="button"
+                . '<input type="button"
                     value="..." onClick="jsUtils.OpenWindow(\'' . $popupUrl . '\', ' . $windowWidth . ', '
-            . $windowHeight . ');">'
-            . '&nbsp;<span id="value_' . $name . '[' . $key . ']">'
-            . $this->getSettings('REFERENCE_VALUE')
-            . '</span>';
+                . $windowHeight . ');">'
+                . '&nbsp;<span id="value_' . $name . '[' . $key . ']">'
+                . $this->getSettings('REFERENCE_VALUE')
+                . '</span>';
     }
 
     /**
@@ -348,7 +348,7 @@ class OrmElementWidget extends NumberWidget
             ]);
 
             while ($entity = $rsEntity->fetch()) {
-                if (in_array($entity['ID'], $valueList)) {
+                if (isset($entity['ID']) && in_array($entity['ID'], $valueList)) {
                     unset($valueList[$entity['ID']]);
                 }
 

@@ -204,6 +204,12 @@ class EntityEditManager extends AbstractEntityManager
             ];
 
             if ($referenceField) {
+                $referenceValue = null;
+                if (isset($this->fieldReferenceList[$field->getName()])) {
+                    $referenceValue = $this->fieldReferenceList[$field->getName(
+                    )]->itemList[$this->elementData[$code]] ?? null;
+                }
+
                 $widget = new OrmElementWidget(
                     [
                         'ENTITY' => $this->fieldReferenceList[$code]->entity,
@@ -213,8 +219,7 @@ class EntityEditManager extends AbstractEntityManager
                         'TITLE_FIELD_NAME' => $code,
                         'TEMPLATE' => 'select',
                         'ADDITIONAL_URL_PARAMS' => [],
-                        'REFERENCE_VALUE' => $this->fieldReferenceList[$field->getName(
-                        )]->itemList[$this->elementData[$code]],
+                        'REFERENCE_VALUE' => $referenceValue,
                     ]
                 );
             } else {

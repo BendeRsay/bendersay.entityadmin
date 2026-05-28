@@ -167,7 +167,7 @@ class EntityListManager extends AbstractEntityManager
                     throw new NotSupportedException('field not supported');
                 }
 
-                $filedValue = $elem[$field->getName()];
+                $filedValue = $elem[$field->getName()] ?? null;
 
                 if ($field instanceof ArrayField) {
                     try {
@@ -454,7 +454,11 @@ class EntityListManager extends AbstractEntityManager
             return;
         }
 
-        $valueRef = $this->fieldReferenceList[$field->getName()]->itemList[$value];
+        $valueRef = null;
+        if (isset($this->fieldReferenceList[$field->getName()])) {
+            $valueRef = $this->fieldReferenceList[$field->getName()]->itemList[$value] ?? null;
+        }
+
         if (!empty($valueRef)) {
             $rowList[$elemKey]['columns'][$field->getName()] = '[' . $value . '] ' . $valueRef;
 
